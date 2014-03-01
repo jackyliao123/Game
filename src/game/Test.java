@@ -1,3 +1,5 @@
+package game;
+
 import java.io.IOException;
 import java.nio.FloatBuffer;
 import java.util.ArrayList;
@@ -41,7 +43,12 @@ public class Test {
 	public static boolean sprint = false;
 	public static boolean hasFocus = true;
 	public static void main(String[] args){
-		try {
+        try {
+            NativeLoader.loadLwjgl();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        try {
 			Display.setDisplayMode(new DisplayMode(800, 600));
 			Display.create();
 			glEnable(GL_DEPTH_TEST);

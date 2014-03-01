@@ -1,3 +1,5 @@
+package game;
+
 public class AABB{
 	public double x;
 	public double y;
