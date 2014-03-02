@@ -84,7 +84,7 @@ public class AABB {
         colors[1] = new Color(0, 255, 0, 255);
         colors[2] = new Color(255, 255, 0, 255);
         colors[3] = new Color(255, 255, 255, 255);
-        colors[4] = new Color(0, 255, 255, 255);
+        colors[4] = new Color(0, 0, 255, 255);
         colors[5] = new Color(255, 0, 255, 255);
 
         normals[0] = new Vertex(0, 0, -1);
