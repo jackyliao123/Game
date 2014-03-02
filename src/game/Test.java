@@ -93,13 +93,11 @@ public class Test {
                 }
                 handleInput();
                 for (AABB aabb : aabbs) {
-                    drawCube(aabb);
-                    // drawCube(aabb.x + aabb.minX, aabb.y + aabb.minY, aabb.z + aabb.minZ, aabb.maxX - aabb.minX, aabb.maxY - aabb.minY, aabb.maxZ - aabb.minZ, 1);
+                    drawCube(aabb.x + aabb.minX, aabb.y + aabb.minY, aabb.z + aabb.minZ, aabb.maxX - aabb.minX, aabb.maxY - aabb.minY, aabb.maxZ - aabb.minZ, 1);
                 }
                 handleMovement();
 
-                drawCube(boundingBox);
-                // drawCube(boundingBox.x - boundingBox.minX, boundingBox.y - boundingBox.minY, boundingBox.z - boundingBox.minZ, boundingBox.maxX - boundingBox.minX, boundingBox.maxY - boundingBox.minY, boundingBox.maxZ - boundingBox.minZ, 1);
+                drawCube(boundingBox.x - boundingBox.minX, boundingBox.y - boundingBox.minY, boundingBox.z - boundingBox.minZ, boundingBox.maxX - boundingBox.minX, boundingBox.maxY - boundingBox.minY, boundingBox.maxZ - boundingBox.minZ, 1);
 
                 Display.update();
                 Display.sync(60);
@@ -274,105 +272,101 @@ public class Test {
         }
     }
 
-    public static void drawCube(AABB boundingBox) {
-        boundingBox.render();
-    }
-
     public static void drawCube(double x, double y, double z, double xSize, double ySize, double zSize, double alpha) {
         x = -x;
         z = -z;
         glEnable(GL_LIGHTING);
         glEnable(GL_LIGHT0);
-//        glBegin(GL_QUADS);
-//        {
-//            //back
-//            glColor4d(1, 0, 0, alpha);
-//            glNormal3d(0, 0, -1);
-//            glVertex3d(x, y, z);
-//            glVertex3d(x, y + ySize, z);
-//            glVertex3d(x + xSize, y + ySize, z);
-//            glVertex3d(x + xSize, y, z);
-//            //front
-//            glColor4d(0, 1, 0, alpha);
-//            glNormal3d(0, 0, 1);
-//            glVertex3d(x, y + ySize, z + zSize);
-//            glVertex3d(x, y, z + zSize);
-//            glVertex3d(x + xSize, y, z + zSize);
-//            glVertex3d(x + xSize, y + ySize, z + zSize);
-//            //down
-//            glColor4d(1, 1, 0, alpha);
-//            glNormal3d(0, -1, 0);
-//            glVertex3d(x + xSize, y, z);
-//            glVertex3d(x + xSize, y, z + zSize);
-//            glVertex3d(x, y, z + zSize);
-//            glVertex3d(x, y, z);
-//            //up
-//            glColor4d(0, 0, 1, alpha);
-//            glNormal3d(0, 1, 0);
-//            glVertex3d(x, y + ySize, z);
-//            glVertex3d(x, y + ySize, z + zSize);
-//            glVertex3d(x + xSize, y + ySize, z + zSize);
-//            glVertex3d(x + xSize, y + ySize, z);
-//            //left
-//            glColor4d(1, 0, 1, alpha);
-//            glNormal3d(-1, 0, 0);
-//            glVertex3d(x, y + ySize, z + zSize);
-//            glVertex3d(x, y + ySize, z);
-//            glVertex3d(x, y, z);
-//            glVertex3d(x, y, z + zSize);
-//            //right
-//            glColor4d(1, 1, 1, alpha);
-//            glNormal3d(1, 0, 0);
-//            glVertex3d(x + xSize, y, z);
-//            glVertex3d(x + xSize, y + ySize, z);
-//            glVertex3d(x + xSize, y + ySize, z + zSize);
-//            glVertex3d(x + xSize, y, z + zSize);
-//            glEnd();
-//
-//            glColor3d(0, 0, 0);
-//            glDisable(GL_LIGHTING);
-//            glDisable(GL_LIGHT0);
-//            glBegin(GL_LINES);
-//            //back
-//            glVertex3d(x, y, z);
-//            glVertex3d(x, y + ySize, z);
-//            glVertex3d(x + xSize, y + ySize, z);
-//            glVertex3d(x + xSize, y, z);
-//            //front
-//            glVertex3d(x, y + ySize, z + zSize);
-//            glVertex3d(x, y, z + zSize);
-//            glVertex3d(x + xSize, y, z + zSize);
-//            glVertex3d(x + xSize, y + ySize, z + zSize);
-//            //down
-//            glVertex3d(x + xSize, y, z);
-//            glVertex3d(x + xSize, y, z + zSize);
-//            glVertex3d(x + xSize, y, z + zSize);
-//            glVertex3d(x, y, z + zSize);
-//            glVertex3d(x, y, z + zSize);
-//            glVertex3d(x, y, z);
-//            glVertex3d(x + xSize, y, z);
-//            glVertex3d(x, y, z);
-//            //up
-//            glVertex3d(x, y + ySize, z);
-//            glVertex3d(x, y + ySize, z + zSize);
-//            glVertex3d(x, y + ySize, z + zSize);
-//            glVertex3d(x + xSize, y + ySize, z + zSize);
-//            glVertex3d(x + xSize, y + ySize, z + zSize);
-//            glVertex3d(x + xSize, y + ySize, z);
-//            glVertex3d(x, y + ySize, z);
-//            glVertex3d(x + xSize, y + ySize, z);
-//            //left
-//            glVertex3d(x, y + ySize, z + zSize);
-//            glVertex3d(x, y + ySize, z);
-//            glVertex3d(x, y, z);
-//            glVertex3d(x, y, z + zSize);
-//            //right
-//            glVertex3d(x + xSize, y, z);
-//            glVertex3d(x + xSize, y + ySize, z);
-//            glVertex3d(x + xSize, y + ySize, z + zSize);
-//            glVertex3d(x + xSize, y, z + zSize);
-//        }
-//        glEnd();
+        glBegin(GL_QUADS);
+        {
+            //back
+            glColor4d(1, 0, 0, alpha);
+            glNormal3d(0, 0, -1);
+            glVertex3d(x, y, z);
+            glVertex3d(x, y + ySize, z);
+            glVertex3d(x + xSize, y + ySize, z);
+            glVertex3d(x + xSize, y, z);
+            //front
+            glColor4d(0, 1, 0, alpha);
+            glNormal3d(0, 0, 1);
+            glVertex3d(x, y + ySize, z + zSize);
+            glVertex3d(x, y, z + zSize);
+            glVertex3d(x + xSize, y, z + zSize);
+            glVertex3d(x + xSize, y + ySize, z + zSize);
+            //down
+            glColor4d(1, 1, 0, alpha);
+            glNormal3d(0, -1, 0);
+            glVertex3d(x + xSize, y, z);
+            glVertex3d(x + xSize, y, z + zSize);
+            glVertex3d(x, y, z + zSize);
+            glVertex3d(x, y, z);
+            //up
+            glColor4d(0, 0, 1, alpha);
+            glNormal3d(0, 1, 0);
+            glVertex3d(x, y + ySize, z);
+            glVertex3d(x, y + ySize, z + zSize);
+            glVertex3d(x + xSize, y + ySize, z + zSize);
+            glVertex3d(x + xSize, y + ySize, z);
+            //left
+            glColor4d(1, 0, 1, alpha);
+            glNormal3d(-1, 0, 0);
+            glVertex3d(x, y + ySize, z + zSize);
+            glVertex3d(x, y + ySize, z);
+            glVertex3d(x, y, z);
+            glVertex3d(x, y, z + zSize);
+            //right
+            glColor4d(1, 1, 1, alpha);
+            glNormal3d(1, 0, 0);
+            glVertex3d(x + xSize, y, z);
+            glVertex3d(x + xSize, y + ySize, z);
+            glVertex3d(x + xSize, y + ySize, z + zSize);
+            glVertex3d(x + xSize, y, z + zSize);
+            glEnd();
+
+            glColor3d(0, 0, 0);
+            glDisable(GL_LIGHTING);
+            glDisable(GL_LIGHT0);
+            glBegin(GL_LINES);
+            //back
+            glVertex3d(x, y, z);
+            glVertex3d(x, y + ySize, z);
+            glVertex3d(x + xSize, y + ySize, z);
+            glVertex3d(x + xSize, y, z);
+            //front
+            glVertex3d(x, y + ySize, z + zSize);
+            glVertex3d(x, y, z + zSize);
+            glVertex3d(x + xSize, y, z + zSize);
+            glVertex3d(x + xSize, y + ySize, z + zSize);
+            //down
+            glVertex3d(x + xSize, y, z);
+            glVertex3d(x + xSize, y, z + zSize);
+            glVertex3d(x + xSize, y, z + zSize);
+            glVertex3d(x, y, z + zSize);
+            glVertex3d(x, y, z + zSize);
+            glVertex3d(x, y, z);
+            glVertex3d(x + xSize, y, z);
+            glVertex3d(x, y, z);
+            //up
+            glVertex3d(x, y + ySize, z);
+            glVertex3d(x, y + ySize, z + zSize);
+            glVertex3d(x, y + ySize, z + zSize);
+            glVertex3d(x + xSize, y + ySize, z + zSize);
+            glVertex3d(x + xSize, y + ySize, z + zSize);
+            glVertex3d(x + xSize, y + ySize, z);
+            glVertex3d(x, y + ySize, z);
+            glVertex3d(x + xSize, y + ySize, z);
+            //left
+            glVertex3d(x, y + ySize, z + zSize);
+            glVertex3d(x, y + ySize, z);
+            glVertex3d(x, y, z);
+            glVertex3d(x, y, z + zSize);
+            //right
+            glVertex3d(x + xSize, y, z);
+            glVertex3d(x + xSize, y + ySize, z);
+            glVertex3d(x + xSize, y + ySize, z + zSize);
+            glVertex3d(x + xSize, y, z + zSize);
+        }
+        glEnd();
     }
 
 }
