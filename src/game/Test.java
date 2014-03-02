@@ -71,7 +71,7 @@ public class Test {
                     }
                 }
             }
-            boundingBox = new AABB(0, 0, 0, -0.4, 0, -0.4, 0.4, 1.8, 0.4);
+            boundingBox = new AABB(0, 0, 0, 0, 0, 0, 0.8, 1.8, 0.8);
             while (!Display.isCloseRequested()) {
                 glMatrixMode(GL_PROJECTION);
                 glLoadIdentity();
@@ -137,50 +137,25 @@ public class Test {
     }
 
     public static void collide() {
-//        int pX = (int) Math.floor(posX);
-//        int pY = (int) Math.floor(posY);
-//        int pZ = (int) Math.floor(posZ);
-//        int vX = (int) Math.ceil(motionX);
-//        int vY = (int) Math.ceil(motionY);
-//        int vZ = (int) Math.ceil(motionZ);
-//        for (AABB aabb : aabbs) {
-//            int x = (int) Math.floor(aabb.x);
-//            int y = (int) Math.floor(aabb.y);
-//            int z = (int) Math.floor(aabb.z);
-//
-//            int iX = 0;
-//            int iY = 0;
-//            int iZ = 0;
-//
-//            while (iX <= vX) {
-//                while (iY <= vY) {
-//                    while (iZ <= vZ) {
-//                        System.out.println("test");
-//                        int tX = pX + iX;
-//                        int tY = pY + iY;
-//                        int tZ = pZ + pZ;
-//                        collideSomething(tX, tY, tZ, x, y, z);
-//                        iZ++;
-//                    }
-//                    iY++;
-//                }
-//                iX++;
-//            }
-//        }
+        for (AABB aabb : aabbs) {
+            if (boundingBox.maxX + boundingBox.x > aabb.minX + aabb.x &&
+                    boundingBox.minX + boundingBox.x < aabb.maxX + aabb.x &&
+                    boundingBox.maxY + boundingBox.y > aabb.minY + aabb.y &&
+                    boundingBox.minY + boundingBox.y < aabb.maxY + aabb.y &&
+                    boundingBox.maxZ + boundingBox.z > aabb.minZ + aabb.z &&
+                    boundingBox.minZ + boundingBox.z < aabb.maxZ + aabb.z) {
+                System.out.println("collision at " + boundingBox.x + ", " + boundingBox.y + ", " + boundingBox.z);
+                System.out.println("and " + aabb.x + ", " + aabb.y + ", " + aabb.z);
+            }
+        }
     }
 
-//    public static void collideSomething(int iX, int iY, int iZ, int pX, int pY, int pZ) {
-//        System.out.println("~~~~~~~~~~~~~~~~~~~");
-//        System.out.println(iX + "," + pX);
-//        System.out.println(iY + "," + pY);
-//        System.out.println(iZ + "," + pZ);
-//        System.out.println("~~~~~~~~~~~~~~~~~~~");
-//
-//        if (iX == pX && iY == pY && iZ == pZ) {
-//            System.out.println("true");
-//            System.out.println("~~~~~");
-//        }
-//    }
+    public static void collideSomething(int iX, int iY, int iZ, int pX, int pY, int pZ) {
+        if (iX == pX && iY == pY && iZ == pZ) {
+            System.out.println("true");
+            System.out.println("~~~~~");
+        }
+    }
 
     public static void handleInput() {
         collide();
