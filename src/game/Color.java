@@ -2,6 +2,18 @@ package game;
 
 public class Color {
 
+    private int r;
+    private int g;
+    private int b;
+    private int a;
+
+    public Color(int r, int g, int b, int a) {
+        this.r = r;
+        this.g = g;
+        this.b = b;
+        this.a = a;
+    }
+
     public int getR() {
         return r;
     }
@@ -18,15 +30,4 @@ public class Color {
         return a;
     }
 
-    private int r;
-    private int g;
-    private int b;
-    private int a;
-
-    public Color(int r, int g, int b, int a) {
-        this.r = r;
-        this.g = g;
-        this.b = b;
-        this.a = a;
-    }
 }

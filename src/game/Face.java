@@ -41,6 +41,7 @@ public class Face {
         vbo = glGenBuffers();
         cbo = glGenBuffers();
         ibo = glGenBuffers();
+        nbo = glGenBuffers();
         bind();
     }
 
@@ -65,7 +66,7 @@ public class Face {
 
         glEnableClientState(GL_NORMAL_ARRAY);
         glBindBuffer(GL_ARRAY_BUFFER, nbo);
-        glNormalPointer(12, normalsBuffer());
+        glNormalPointer(GL_FLOAT, 12, 0);
 
         glEnableClientState(GL_COLOR_ARRAY);
         glBindBuffer(GL_ARRAY_BUFFER, cbo);
