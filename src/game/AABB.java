@@ -1,7 +1,6 @@
 package game;
 
 public class AABB {
-
     public double x;
     public double y;
     public double z;
@@ -22,6 +21,136 @@ public class AABB {
         this.maxX = maxX;
         this.maxY = maxY;
         this.maxZ = maxZ;
+    }
+
+    public double getAbsMinX() {
+        return x + minX;
+    }
+
+    public double getAbsMinY() {
+        return y + minY;
+    }
+
+    public double getAbsMinZ() {
+        return z + minZ;
+    }
+
+    public double getAbsMaxX() {
+        return x + maxX;
+    }
+
+    public double getAbsMaxY() {
+        return y + maxY;
+    }
+
+    public double getAbsMaxZ() {
+        return z + maxZ;
+    }
+
+    public double getSizeX() {
+        return maxX - minX;
+    }
+
+    public double getSizeY() {
+        return maxY - minY;
+    }
+
+    public double getSizeZ() {
+        return maxZ - minZ;
+    }
+
+    public Point3 getCenterPoint() {
+        return new Point3(x + (minX + maxX) / 2.0, y + (minY + maxY) / 2.0, z + (minZ + maxZ) / 2);
+    }
+
+    public boolean intersects(AABB aabb) {
+        double minx = Math.max(getAbsMinX(), aabb.getAbsMinX());
+        double miny = Math.max(getAbsMinY(), aabb.getAbsMinY());
+        double minz = Math.max(getAbsMinZ(), aabb.getAbsMinZ());
+        double maxx = Math.min(getAbsMaxX(), aabb.getAbsMaxX());
+        double maxy = Math.min(getAbsMaxY(), aabb.getAbsMaxY());
+        double maxz = Math.min(getAbsMaxZ(), aabb.getAbsMaxZ());
+        if (minx > maxx || miny > maxy || minz > maxz) {
+            return false;
+        }
+        return true;
+    }
+
+    public static boolean contains(Point2[] points, Point2 point) {
+        int j = points.length - 1;
+        boolean oddNodes = false;
+        for (int i = 0; i < points.length; j = i++) {
+            if ((((points[i].y <= point.y) && (point.y < points[j].y)) ||
+                    ((points[j].y <= point.y) && (point.y < points[i].y))) &&
+                    (point.x < (points[j].x - points[i].x) * (point.y - points[i].y) / (points[j].y - points[i].y) + points[i].x))
+                oddNodes = !oddNodes;
+        }
+        return oddNodes;
+    }
+
+    public static boolean intersects(Quad2 q, Line2 l) {
+        if (Util.lineIntersect(q.points[0], q.points[1], l.points[0], l.points[1]))
+            return true;
+        if (Util.lineIntersect(q.points[1], q.points[2], l.points[0], l.points[1]))
+            return true;
+        if (Util.lineIntersect(q.points[2], q.points[3], l.points[0], l.points[1]))
+            return true;
+        if (Util.lineIntersect(q.points[3], q.points[0], l.points[0], l.points[1]))
+            return true;
+        if (contains(q.points, l.points[0]))
+            return true;
+        if (contains(q.points, l.points[1]))
+            return true;
+        return false;
+    }
+
+    public static boolean intersectX(Quad3 quad, Quad3 qSta, Vector3 velocity) {
+        Quad2 q1 = new Quad2(quad.points[0].flattenY(), quad.points[1].flattenY(), quad.points[1].add(velocity).flattenY(), quad.points[0].add(velocity).flattenY());
+        Quad2 q2 = new Quad2(quad.points[1].flattenZ(), quad.points[2].flattenZ(), quad.points[2].add(velocity).flattenZ(), quad.points[1].add(velocity).flattenZ());
+        Line2 l1 = new Line2(qSta.points[0].flattenY(), qSta.points[1].flattenY());
+        Line2 l2 = new Line2(qSta.points[1].flattenZ(), qSta.points[2].flattenZ());
+        if (intersects(q1, l1) && intersects(q2, l2)) {
+            return true;
+        }
+        return false;
+    }
+
+    public static boolean intersectY(Quad3 quad, Quad3 qSta, Vector3 velocity) {
+        Quad2 q1 = new Quad2(quad.points[0].flattenX(), quad.points[1].flattenX(), quad.points[1].add(velocity).flattenX(), quad.points[0].add(velocity).flattenX());
+        Quad2 q2 = new Quad2(quad.points[1].flattenZ(), quad.points[2].flattenZ(), quad.points[2].add(velocity).flattenZ(), quad.points[1].add(velocity).flattenZ());
+        Line2 l1 = new Line2(qSta.points[0].flattenX(), qSta.points[1].flattenX());
+        Line2 l2 = new Line2(qSta.points[1].flattenZ(), qSta.points[2].flattenZ());
+        if (intersects(q1, l1) && intersects(q2, l2)) {
+            return true;
+        }
+        return false;
+    }
+
+    public static boolean intersectZ(Quad3 quad, Quad3 qSta, Vector3 velocity) {
+        Quad2 q1 = new Quad2(quad.points[0].flattenX(), quad.points[1].flattenX(), quad.points[1].add(velocity).flattenX(), quad.points[0].add(velocity).flattenX());
+        Quad2 q2 = new Quad2(quad.points[1].flattenY(), quad.points[2].flattenY(), quad.points[2].add(velocity).flattenY(), quad.points[1].add(velocity).flattenY());
+        Line2 l1 = new Line2(qSta.points[0].flattenX(), qSta.points[1].flattenX());
+        Line2 l2 = new Line2(qSta.points[1].flattenY(), qSta.points[2].flattenY());
+        if (intersects(q1, l1) && intersects(q2, l2)) {
+//            System.out.println("l1");
+//            for (Point2 point : l1.points) {
+//                System.out.println(point.x + ", " + point.y);
+//            }
+//            System.out.println("~~~~~~~~~~");
+//            for (Point2 point : q1.points) {
+//                System.out.println(point.x + ", " + point.y);
+//            }
+//            System.out.println("l2");
+//            for (Point2 point : l2.points) {
+//                System.out.println(point.x + ", " + point.y);
+//            }
+//            System.out.println("~~~~~~~~~~");
+//            for (Point2 point : q2.points) {
+//                System.out.println(point.x + ", " + point.y);
+//            }
+            return true;
+        }
+        return false;
     }
 
 }
