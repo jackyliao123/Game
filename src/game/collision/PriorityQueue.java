@@ -1,4 +1,4 @@
-package game;
+package game.collision;
 
 import java.util.ArrayList;
 

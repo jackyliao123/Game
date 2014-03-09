@@ -1,4 +1,4 @@
-package game;
+package game.collision.geom;
 
 public class Line2 {
 	public Point2[] points = new Point2[2];

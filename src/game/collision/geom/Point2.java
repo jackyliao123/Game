@@ -1,4 +1,4 @@
-package game;
+package game.collision.geom;
 
 public class Point2{
 	public double x;

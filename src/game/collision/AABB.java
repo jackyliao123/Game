@@ -1,4 +1,7 @@
-package game;
+package game.collision;
+
+import game.Vector3;
+import game.collision.geom.*;
 
 public class AABB {
     public double x;

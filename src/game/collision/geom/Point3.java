@@ -1,4 +1,6 @@
-package game;
+package game.collision.geom;
+
+import game.Vector3;
 
 public class Point3 {
 

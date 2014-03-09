@@ -1,5 +1,8 @@
 package game;
 
+import game.collision.*;
+import game.collision.geom.Point3;
+import game.collision.geom.Quad3;
 import org.lwjgl.BufferUtils;
 import org.lwjgl.LWJGLException;
 import org.lwjgl.input.Keyboard;
@@ -9,11 +12,14 @@ import org.lwjgl.opengl.DisplayMode;
 import org.lwjgl.util.glu.GLU;
 
 import java.io.IOException;
+import java.nio.DoubleBuffer;
 import java.nio.FloatBuffer;
+import java.nio.IntBuffer;
 import java.util.ArrayList;
 import java.util.Random;
 
 import static org.lwjgl.opengl.GL11.*;
+import static org.lwjgl.opengl.GL15.*;
 
 public class Test {
 
@@ -28,6 +34,7 @@ public class Test {
     public static boolean canJump;
     public static AABB boundingBox = new AABB(0, 0, 0, -0.4, 0, -0.4, 0.4, 1.8, 0.4);
     public static ArrayList<AABB> aabbs = new ArrayList<AABB>();
+    public static ArrayList<GameObject> objects = new ArrayList<GameObject>();
     public static double speed = 0.005;
     public static int x;
     public static int y;
@@ -41,6 +48,11 @@ public class Test {
     public static boolean sprint = false;
     public static boolean hasFocus = true;
     public static final double block = 1e-8;
+
+    private static int vbo;
+    private static int ibo;
+    private static int cbo;
+    private static int size;
 
     public static void main(String[] args) {
         try {
@@ -67,14 +79,16 @@ public class Test {
             Random random = new Random(0);
             for (int i = 0; i < 16; i++) {
                 for (int j = 0; j < 16; j++) {
-//                    for(int k = 0; k < 16; k ++){
-//						if(random.nextInt() % 5 == 0){
-//							aabbs.add(new AABB(i, j, k, 0, 0, 0, 1, 1, 1));
-//						}
-//					}
-                    aabbs.add(new AABB(i, 0, j, 0, 0, 0, 1, 1, 1));
+                    for(int k = 0; k < 16; k ++){
+                        AABB aabb = new AABB(i, k, j, 0, 0, 0, 1, 1, 1);
+                        aabbs.add(aabb);
+                        objects.add(new GameObject(aabb));
+					}
+
                 }
             }
+            objects.add(new GameObject(boundingBox));
+            initVbo();
 //            aabbs.add(new AABB(0, 0, 0, 0, 0, 0, block, 1000, 1000));
 //            aabbs.add(new AABB(1, 0, 0, 0, 0, 0, block, 1000, 1000));
             //aabbs.add(new AABB(10, 10, 10, 0, 0, 0, 2, 2, 2));
@@ -103,9 +117,10 @@ public class Test {
                 }
                 glDisable(GL_CULL_FACE);
                 handleMovement();
-                drawAABB(boundingBox, 0.5);
-                drawAABB(new AABB(boundingBox.x, boundingBox.y, boundingBox.z, -0.01, -0.01, -0.01, 0.01, 0.01, 0.01), 1);
-                //drawCube(boundingBox.x - boundingBox.minX, boundingBox.y - boundingBox.minY, boundingBox.z - boundingBox.minZ, boundingBox.maxX - boundingBox.minX, boundingBox.maxY - boundingBox.minY, boundingBox.maxZ - boundingBox.minZ, 0.5);
+                draw();
+//                drawAABB(boundingBox, 0.5);
+//                drawAABB(new AABB(boundingBox.x, boundingBox.y, boundingBox.z, -0.01, -0.01, -0.01, 0.01, 0.01, 0.01), 1);
+//                drawCube(boundingBox.x - boundingBox.minX, boundingBox.y - boundingBox.minY, boundingBox.z - boundingBox.minZ, boundingBox.maxX - boundingBox.minX, boundingBox.maxY - boundingBox.minY, boundingBox.maxZ - boundingBox.minZ, 0.5);
                 glEnable(GL_CULL_FACE);
                 Display.update();
                 Display.sync(60);
@@ -113,6 +128,69 @@ public class Test {
         } catch (LWJGLException e) {
             e.printStackTrace();
         }
+    }
+
+    private static void initVbo() {
+        vbo = glGenBuffers();
+        ibo = glGenBuffers();
+        cbo = glGenBuffers();
+    }
+
+    private static void createGlobalVBO() {
+        ArrayList<Vertex> vertices = new ArrayList<Vertex>();
+        ArrayList<Integer> indices = new ArrayList<Integer>();
+        for (int i = 0; i < objects.size(); i++) {
+            GameObject object = objects.get(i);
+            for (int j = 0; j < object.getFaces().length; j++) {
+                Face face = object.getFaces()[j];
+                for (int k = 0; k < face.getVertices().length; k++) {
+                    vertices.add(face.getVertices()[k]);
+                    indices.add(face.getIndicies()[k]);
+                }
+            }
+        }
+        DoubleBuffer vertexBuffer = BufferUtils.createDoubleBuffer(vertices.size() * 3);
+        IntBuffer colorBuffer = BufferUtils.createIntBuffer(vertices.size() * 4);
+        for (Vertex vertex : vertices) {
+            size++;
+            vertexBuffer.put(vertex.getPosition().x);
+            vertexBuffer.put(vertex.getPosition().y);
+            vertexBuffer.put(vertex.getPosition().z);
+            colorBuffer.put(vertex.getColor().getRed());
+            colorBuffer.put(vertex.getColor().getGreen());
+            colorBuffer.put(vertex.getColor().getBlue());
+            colorBuffer.put(vertex.getColor().getAlpha());
+        }
+        vertexBuffer.flip();
+        IntBuffer indexBuffer = BufferUtils.createIntBuffer(indices.size());
+        for (Integer index : indices) {
+            indexBuffer.put(index);
+        }
+        indexBuffer.flip();
+
+        glBindBuffer(GL_ARRAY_BUFFER, vbo);
+        glBufferData(GL_ARRAY_BUFFER, vertexBuffer, GL_STATIC_DRAW);
+
+        glBindBuffer(GL_ARRAY_BUFFER, cbo);
+        glBufferData(GL_ARRAY_BUFFER, colorBuffer, GL_STATIC_DRAW);
+
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ibo);
+        glBufferData(GL_ELEMENT_ARRAY_BUFFER, indexBuffer, GL_STATIC_DRAW);
+    }
+
+    public static void draw() {
+        glEnableClientState(GL_VERTEX_ARRAY);
+        glBindBuffer(GL_ARRAY_BUFFER, vbo);
+        glVertexPointer(3, GL_DOUBLE, size * 3, 0);
+
+        glEnableClientState(GL_COLOR_ARRAY);
+        glBindBuffer(GL_ARRAY_BUFFER, cbo);
+        glColorPointer(4, GL_UNSIGNED_INT, size * 3, 0);
+
+
+        glEnableClientState(GL_INDEX_ARRAY);
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ibo);
+        glDrawElements(GL_TRIANGLES, size, GL_UNSIGNED_INT, 0);
     }
 
     public static void drawAABB(AABB aabb, double alpha) {
@@ -392,6 +470,7 @@ public class Test {
         glEnable(GL_LIGHTING);
         glEnable(GL_LIGHT0);
         glBegin(GL_QUADS);
+
         //back
         glColor4d(1, 0, 0, alpha);
         glNormal3d(0, 0, -1);
