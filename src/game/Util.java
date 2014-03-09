@@ -9,10 +9,7 @@ public class Util {
         }
         double ua = ((p4.x - p3.x) * (p1.y - p3.y) - (p4.y - p3.y) * (p1.x - p3.x)) / denom;
         double ub = ((p2.x - p1.x) * (p1.y - p3.y) - (p2.y - p1.y) * (p1.x - p3.x)) / denom;
-        if (ua >= 0.0f && ua <= 1.0f && ub >= 0.0f && ub <= 1.0f) {
-            return true;
-        }
-        return false;
+        return ua >= 0.0f && ua <= 1.0f && ub >= 0.0f && ub <= 1.0f;
     }
 
 }
