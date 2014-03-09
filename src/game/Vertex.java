@@ -10,6 +10,7 @@ public class Vertex {
 
     public Vertex(Vector3 position, Color color) {
         this.position = position;
+        this.color = color;
     }
 
     public Vector3 getPosition() {

@@ -10,7 +10,7 @@ public class GameObject {
 
     public GameObject(AABB aabb) {
         this.aabb = aabb;
-        this.faces = getFaces();
+        this.faces = createFaces();
     }
 
     private Face[] createFaces() {
