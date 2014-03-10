@@ -38,6 +38,7 @@ public class Test {
     public static AABB boundingBox = new AABB(0, 0, 0, -0.4, 0, -0.4, 0.4, 1.8, 0.4);
     public static ArrayList<AABB> aabbs = new ArrayList<AABB>();
     public static ArrayList<GameObject> objects = new ArrayList<GameObject>();
+    public static GameObject player;
     public static double speed = 0.005;
     public static int x;
     public static int y;
@@ -52,6 +53,9 @@ public class Test {
     public static boolean hasFocus = true;
     public static final double block = 1e-8;
 
+    private static int pVbo;
+    private static int pIbo;
+    private static int pCbo;
     private static int vbo;
     private static int ibo;
     private static int cbo;
@@ -82,15 +86,15 @@ public class Test {
             Random random = new Random(0);
             for (int i = 0; i < 16; i++) {
                 for (int j = 0; j < 16; j++) {
-                    for(int k = 0; k < 16; k ++){
+                    for (int k = 0; k < 16; k++) {
                         AABB aabb = new AABB(i, k, j, 0, 0, 0, 1, 1, 1);
                         aabbs.add(aabb);
                         objects.add(new GameObject(aabb));
-					}
+                    }
 
                 }
             }
-            objects.add(new GameObject(boundingBox));
+            player = new GameObject(boundingBox);
             initVbo();
 //            aabbs.add(new AABB(0, 0, 0, 0, 0, 0, block, 1000, 1000));
 //            aabbs.add(new AABB(1, 0, 0, 0, 0, 0, block, 1000, 1000));
@@ -137,7 +141,51 @@ public class Test {
         ibo = glGenBuffers();
         cbo = glGenBuffers();
 
+        pVbo = glGenBuffers();
+        pIbo = glGenBuffers();
+        pCbo = glGenBuffers();
+
         createGlobalVBO();
+        createPlayerVBO();
+    }
+
+    private static void createPlayerVBO() {
+        ArrayList<Vertex> vertices = new ArrayList<Vertex>();
+        ArrayList<Integer> indices = new ArrayList<Integer>();
+        for (int i = 0; i < player.getFaces().length; i++) {
+            Face face = player.getFaces()[i];
+            for (int j = 0; j < face.getVertices().length; j++) {
+                vertices.add(face.getVertices()[j]);
+                indices.add(face.getIndicies()[j] + 4 * i);
+            }
+        }
+        DoubleBuffer vertexBuffer = BufferUtils.createDoubleBuffer(vertices.size() * 3);
+        ByteBuffer colorBuffer = BufferUtils.createByteBuffer(vertices.size() * 4);
+        for (Vertex vertex : vertices) {
+            vertexBuffer.put(vertex.getPosition().x);
+            vertexBuffer.put(vertex.getPosition().y);
+            vertexBuffer.put(vertex.getPosition().z);
+            colorBuffer.put(vertex.getColor().getRedByte());
+            colorBuffer.put(vertex.getColor().getGreenByte());
+            colorBuffer.put(vertex.getColor().getBlueByte());
+            colorBuffer.put(vertex.getColor().getAlphaByte());
+        }
+        vertexBuffer.flip();
+        colorBuffer.flip();
+        IntBuffer indexBuffer = BufferUtils.createIntBuffer(indices.size());
+        for (Integer index : indices) {
+            indexBuffer.put(index);
+        }
+        indexBuffer.flip();
+
+        glBindBuffer(GL_ARRAY_BUFFER, pVbo);
+        glBufferData(GL_ARRAY_BUFFER, vertexBuffer, GL_STATIC_DRAW);
+
+        glBindBuffer(GL_ARRAY_BUFFER, pCbo);
+        glBufferData(GL_ARRAY_BUFFER, colorBuffer, GL_STATIC_DRAW);
+
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, pIbo);
+        glBufferData(GL_ELEMENT_ARRAY_BUFFER, indexBuffer, GL_STATIC_DRAW);
     }
 
     private static void createGlobalVBO() {
@@ -149,9 +197,7 @@ public class Test {
                 Face face = object.getFaces()[j];
                 for (int k = 0; k < face.getVertices().length; k++) {
                     vertices.add(face.getVertices()[k]);
-//                    System.out.println(i);
                     indices.add(face.getIndicies()[k] + 4 * j + i * 24);
-                    System.out.println(face.getIndicies()[k] + 4 * j + i * 24);
                 }
             }
         }
@@ -384,6 +430,7 @@ public class Test {
     }
 
     public static void handleInput() {
+        glMatrixMode(GL_PROJECTION);
         if (hasFocus) {
             rotx += (Mouse.getX() - Display.getWidth() / 2.0) / 5.0;
             roty -= (Mouse.getY() - Display.getHeight() / 2.0) / 5.0;
@@ -470,6 +517,30 @@ public class Test {
                 }
             }
         }
+        drawPlayer(posX, posY, posZ);
+    }
+
+    private static void drawPlayer(double xPos, double yPos, double zPos) {
+        glMatrixMode(GL_MODELVIEW);
+        glPushMatrix();
+        glLoadIdentity();
+
+        glTranslated(xPos, yPos, zPos);
+        // glTranslated(xOffset, yOffset, zOffset);
+
+        glEnableClientState(GL_VERTEX_ARRAY);
+        glBindBuffer(GL_ARRAY_BUFFER, pVbo);
+        glVertexPointer(3, GL_DOUBLE, 0, 0);
+
+        glEnableClientState(GL_COLOR_ARRAY);
+        glBindBuffer(GL_ARRAY_BUFFER, pCbo);
+        glColorPointer(4, GL_UNSIGNED_BYTE, 0, 0);
+
+        glEnableClientState(GL_ELEMENT_ARRAY_BUFFER);
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, pIbo);
+        glDrawElements(GL_QUADS, 24, GL_UNSIGNED_INT, 0);
+
+        glPopMatrix();
     }
 
     public static void drawCube(double x, double y, double z, double xSize, double ySize, double zSize, double alpha) {
