@@ -22,6 +22,7 @@ import java.util.ArrayList;
 import java.util.Random;
 
 import static org.lwjgl.opengl.GL11.*;
+import static org.lwjgl.opengl.GL11.glLoadIdentity;
 import static org.lwjgl.opengl.GL15.*;
 
 public class Test {
@@ -39,7 +40,7 @@ public class Test {
     public static ArrayList<AABB> aabbs = new ArrayList<AABB>();
     public static ArrayList<GameObject> objects = new ArrayList<GameObject>();
     public static GameObject player;
-    public static double speed = 0.005;
+    public static double speed = 1.5;
     public static int x;
     public static int y;
     public static int z;
@@ -74,8 +75,8 @@ public class Test {
             glEnable(GL_CULL_FACE);
             glCullFace(GL_BACK);
             glFrontFace(GL_CCW);
-            glEnable(GL_LIGHTING);
-            glEnable(GL_LIGHT0);
+//            glEnable(GL_LIGHTING);
+//            glEnable(GL_LIGHT0);
             glEnable(GL_COLOR_MATERIAL);
             glEnable(GL_BLEND);
             glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
@@ -86,24 +87,26 @@ public class Test {
             Random random = new Random(0);
             for (int i = 0; i < 16; i++) {
                 for (int j = 0; j < 16; j++) {
-                    for (int k = 0; k < 16; k++) {
-                        AABB aabb = new AABB(i, k, j, 0, 0, 0, 1, 1, 1);
-                        aabbs.add(aabb);
-                        objects.add(new GameObject(aabb));
-                    }
-
+//                    for (int k = 0; k < 16; k++) {
+//                        AABB aabb = new AABB(i, j, k, 0, 0, 0, 1, 1, 1);
+//                        aabbs.add(aabb);
+//                        objects.add(new GameObject(aabb));
+//                    }
+                    AABB aabb = new AABB(i, 0, j, 0, 0, 0, 1, 1, 1);
+                    aabbs.add(aabb);
+                    objects.add(new GameObject(aabb));
                 }
             }
             player = new GameObject(boundingBox);
             initVbo();
 //            aabbs.add(new AABB(0, 0, 0, 0, 0, 0, block, 1000, 1000));
 //            aabbs.add(new AABB(1, 0, 0, 0, 0, 0, block, 1000, 1000));
-            //aabbs.add(new AABB(10, 10, 10, 0, 0, 0, 2, 2, 2));
+//            aabbs.add(new AABB(10, 10, 10, 0, 0, 0, 2, 2, 2));
             while (!Display.isCloseRequested()) {
                 glMatrixMode(GL_PROJECTION);
                 glLoadIdentity();
                 fov += (targetFov - fov) * 0.2;
-                GLU.gluPerspective(fov, (float) Display.getWidth() / (float) Display.getHeight(), 0.01F, 1000.0F);
+                GLU.gluPerspective(fov, (float) Display.getWidth() / (float) Display.getHeight(), 0.01F, 100.0F);
                 glMatrixMode(GL_MODELVIEW);
                 glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
                 glLoadIdentity();
@@ -119,15 +122,7 @@ public class Test {
                     Mouse.setGrabbed(true);
                 }
                 handleInput();
-//                for (AABB aabb : aabbs) {
-//                    drawAABB(aabb, 1);
-//                }
                 handleMovement();
-                glEnable(GL_CULL_FACE);
-                draw();
-//                drawAABB(boundingBox, 0.5);
-//                drawAABB(new AABB(boundingBox.x, boundingBox.y, boundingBox.z, -0.01, -0.01, -0.01, 0.01, 0.01, 0.01), 1);
-//                drawCube(boundingBox.x - boundingBox.minX, boundingBox.y - boundingBox.minY, boundingBox.z - boundingBox.minZ, boundingBox.maxX - boundingBox.minX, boundingBox.maxY - boundingBox.minY, boundingBox.maxZ - boundingBox.minZ, 0.5);
                 Display.update();
                 Display.sync(60);
             }
@@ -145,8 +140,8 @@ public class Test {
         pIbo = glGenBuffers();
         pCbo = glGenBuffers();
 
-        createGlobalVBO();
         createPlayerVBO();
+        createGlobalVBO();
     }
 
     private static void createPlayerVBO() {
@@ -233,6 +228,8 @@ public class Test {
     }
 
     public static void draw() {
+        glMatrixMode(GL_MODELVIEW);
+
         glEnableClientState(GL_VERTEX_ARRAY);
         glBindBuffer(GL_ARRAY_BUFFER, vbo);
         glVertexPointer(3, GL_DOUBLE, 0, 0);
@@ -245,19 +242,19 @@ public class Test {
         glDrawElements(GL_QUADS, size, GL_UNSIGNED_INT, 0);
     }
 
-    public static void drawAABB(AABB aabb, double alpha) {
-        drawCube(aabb.getAbsMinX(), aabb.getAbsMinY(), aabb.getAbsMinZ(), aabb.getSizeX(), aabb.getSizeY(), aabb.getSizeZ(), alpha);
+    public static void drawAABB(AABB aabb) {
+        drawBoundingBox(aabb.getAbsMinX(), aabb.getAbsMinY(), aabb.getAbsMinZ(), aabb.getSizeX(), aabb.getSizeY(), aabb.getSizeZ());
     }
 
     public static void handleMovement() {
-        boundingBox.x = posX;
-        boundingBox.y = posY;
-        boundingBox.z = posZ;
         canJump = false;
-//        collide();
+        collide();
         posX += motionX;
         posY += motionY;
         posZ += motionZ;
+        boundingBox.x = posX;
+        boundingBox.y = posY;
+        boundingBox.z = posZ;
         if (posY < 0) {
             posY = 0;
             motionY = 0;
@@ -278,92 +275,108 @@ public class Test {
         motionZ *= 0.95;
     }
 
+    public static boolean shouldCollide(AABB aabb) {
+        boolean c0 = aabb.getAbsMaxY() > boundingBox.getAbsMinY() + motionY;
+        boolean c1 = aabb.getAbsMinY() < boundingBox.getAbsMaxY() + motionY;
+        boolean c2 = aabb.getAbsMaxX() > boundingBox.getAbsMinX() + motionX;
+        boolean c3 = aabb.getAbsMinX() < boundingBox.getAbsMaxX() + motionX;
+        boolean c4 = aabb.getAbsMaxZ() > boundingBox.getAbsMinZ() + motionZ;
+        boolean c5 = aabb.getAbsMinZ() < boundingBox.getAbsMaxZ() + motionZ;
+
+        boolean b0 = c0 && c1 && c2 && c3 && c4 && c5;
+
+        return b0;
+    }
+
     public static void collide() {
         PriorityQueue<CollisionSide> sides = new PriorityQueue<CollisionSide>();
         for (AABB aabb : aabbs) {
-            if (motionY > 0) {
-                sides.add(new CollisionSide(
-                        new Quad3(
-                                new Point3(boundingBox.getAbsMinX(), boundingBox.getAbsMaxY(), boundingBox.getAbsMinZ()),
-                                new Point3(boundingBox.getAbsMinX(), boundingBox.getAbsMaxY(), boundingBox.getAbsMaxZ()),
-                                new Point3(boundingBox.getAbsMaxX(), boundingBox.getAbsMaxY(), boundingBox.getAbsMaxZ()),
-                                new Point3(boundingBox.getAbsMaxX(), boundingBox.getAbsMaxY(), boundingBox.getAbsMinZ())),
-                        new Quad3(
-                                new Point3(aabb.getAbsMinX(), aabb.getAbsMinY(), aabb.getAbsMinZ()),
-                                new Point3(aabb.getAbsMinX(), aabb.getAbsMinY(), aabb.getAbsMaxZ()),
-                                new Point3(aabb.getAbsMaxX(), aabb.getAbsMinY(), aabb.getAbsMaxZ()),
-                                new Point3(aabb.getAbsMaxX(), aabb.getAbsMinY(), aabb.getAbsMinZ())),
-                        new Vector3(motionX, motionY, motionZ), aabb, CollisionSide.Yp));
-            }
-            if (motionY < 0) {
-                sides.add(new CollisionSide(
-                        new Quad3(
-                                new Point3(boundingBox.getAbsMinX(), boundingBox.getAbsMinY(), boundingBox.getAbsMinZ()),
-                                new Point3(boundingBox.getAbsMinX(), boundingBox.getAbsMinY(), boundingBox.getAbsMaxZ()),
-                                new Point3(boundingBox.getAbsMaxX(), boundingBox.getAbsMinY(), boundingBox.getAbsMaxZ()),
-                                new Point3(boundingBox.getAbsMaxX(), boundingBox.getAbsMinY(), boundingBox.getAbsMinZ())),
-                        new Quad3(
-                                new Point3(aabb.getAbsMinX(), aabb.getAbsMaxY(), aabb.getAbsMinZ()),
-                                new Point3(aabb.getAbsMinX(), aabb.getAbsMaxY(), aabb.getAbsMaxZ()),
-                                new Point3(aabb.getAbsMaxX(), aabb.getAbsMaxY(), aabb.getAbsMaxZ()),
-                                new Point3(aabb.getAbsMaxX(), aabb.getAbsMaxY(), aabb.getAbsMinZ())),
-                        new Vector3(motionX, motionY, motionZ), aabb, CollisionSide.Yn));
-            }
-            if (motionX > 0) {
-                sides.add(new CollisionSide(
-                        new Quad3(
-                                new Point3(boundingBox.getAbsMaxX(), boundingBox.getAbsMaxY(), boundingBox.getAbsMaxZ()),
-                                new Point3(boundingBox.getAbsMaxX(), boundingBox.getAbsMaxY(), boundingBox.getAbsMinZ()),
-                                new Point3(boundingBox.getAbsMaxX(), boundingBox.getAbsMinY(), boundingBox.getAbsMinZ()),
-                                new Point3(boundingBox.getAbsMaxX(), boundingBox.getAbsMinY(), boundingBox.getAbsMaxZ())),
-                        new Quad3(
-                                new Point3(aabb.getAbsMinX(), aabb.getAbsMaxY(), aabb.getAbsMaxZ()),
-                                new Point3(aabb.getAbsMinX(), aabb.getAbsMaxY(), aabb.getAbsMinZ()),
-                                new Point3(aabb.getAbsMinX(), aabb.getAbsMinY(), aabb.getAbsMinZ()),
-                                new Point3(aabb.getAbsMinX(), aabb.getAbsMinY(), aabb.getAbsMaxZ())),
-                        new Vector3(motionX, motionY, motionZ), aabb, CollisionSide.Xp));
-            }
-            if (motionX < 0) {
-                sides.add(new CollisionSide(
-                        new Quad3(
-                                new Point3(boundingBox.getAbsMinX(), boundingBox.getAbsMaxY(), boundingBox.getAbsMaxZ()),
-                                new Point3(boundingBox.getAbsMinX(), boundingBox.getAbsMaxY(), boundingBox.getAbsMinZ()),
-                                new Point3(boundingBox.getAbsMinX(), boundingBox.getAbsMinY(), boundingBox.getAbsMinZ()),
-                                new Point3(boundingBox.getAbsMinX(), boundingBox.getAbsMinY(), boundingBox.getAbsMaxZ())),
-                        new Quad3(
-                                new Point3(aabb.getAbsMaxX(), aabb.getAbsMaxY(), aabb.getAbsMaxZ()),
-                                new Point3(aabb.getAbsMaxX(), aabb.getAbsMaxY(), aabb.getAbsMinZ()),
-                                new Point3(aabb.getAbsMaxX(), aabb.getAbsMinY(), aabb.getAbsMinZ()),
-                                new Point3(aabb.getAbsMaxX(), aabb.getAbsMinY(), aabb.getAbsMaxZ())),
-                        new Vector3(motionX, motionY, motionZ), aabb, CollisionSide.Xn));
-            }
-            if (motionZ > 0) {
-                sides.add(new CollisionSide(
-                        new Quad3(
-                                new Point3(boundingBox.getAbsMinX(), boundingBox.getAbsMinY(), boundingBox.getAbsMaxZ()),
-                                new Point3(boundingBox.getAbsMinX(), boundingBox.getAbsMaxY(), boundingBox.getAbsMaxZ()),
-                                new Point3(boundingBox.getAbsMaxX(), boundingBox.getAbsMaxY(), boundingBox.getAbsMaxZ()),
-                                new Point3(boundingBox.getAbsMaxX(), boundingBox.getAbsMinY(), boundingBox.getAbsMaxZ())),
-                        new Quad3(
-                                new Point3(aabb.getAbsMinX(), aabb.getAbsMinY(), aabb.getAbsMinZ()),
-                                new Point3(aabb.getAbsMinX(), aabb.getAbsMaxY(), aabb.getAbsMinZ()),
-                                new Point3(aabb.getAbsMaxX(), aabb.getAbsMaxY(), aabb.getAbsMinZ()),
-                                new Point3(aabb.getAbsMaxX(), aabb.getAbsMinY(), aabb.getAbsMinZ())),
-                        new Vector3(motionX, motionY, motionZ), aabb, CollisionSide.Zp));
-            }
-            if (motionZ < 0) {
-                sides.add(new CollisionSide(
-                        new Quad3(
-                                new Point3(boundingBox.getAbsMinX(), boundingBox.getAbsMinY(), boundingBox.getAbsMinZ()),
-                                new Point3(boundingBox.getAbsMinX(), boundingBox.getAbsMaxY(), boundingBox.getAbsMinZ()),
-                                new Point3(boundingBox.getAbsMaxX(), boundingBox.getAbsMaxY(), boundingBox.getAbsMinZ()),
-                                new Point3(boundingBox.getAbsMaxX(), boundingBox.getAbsMinY(), boundingBox.getAbsMinZ())),
-                        new Quad3(
-                                new Point3(aabb.getAbsMinX(), aabb.getAbsMinY(), aabb.getAbsMaxZ()),
-                                new Point3(aabb.getAbsMinX(), aabb.getAbsMaxY(), aabb.getAbsMaxZ()),
-                                new Point3(aabb.getAbsMaxX(), aabb.getAbsMaxY(), aabb.getAbsMaxZ()),
-                                new Point3(aabb.getAbsMaxX(), aabb.getAbsMinY(), aabb.getAbsMaxZ())),
-                        new Vector3(motionX, motionY, motionZ), aabb, CollisionSide.Zn));
+            if (shouldCollide(aabb)) {
+
+                if (motionY > 0) {
+                    sides.add(new CollisionSide(
+                            new Quad3(
+                                    new Point3(boundingBox.getAbsMinX(), boundingBox.getAbsMaxY(), boundingBox.getAbsMinZ()),
+                                    new Point3(boundingBox.getAbsMinX(), boundingBox.getAbsMaxY(), boundingBox.getAbsMaxZ()),
+                                    new Point3(boundingBox.getAbsMaxX(), boundingBox.getAbsMaxY(), boundingBox.getAbsMaxZ()),
+                                    new Point3(boundingBox.getAbsMaxX(), boundingBox.getAbsMaxY(), boundingBox.getAbsMinZ())),
+                            new Quad3(
+                                    new Point3(aabb.getAbsMinX(), aabb.getAbsMinY(), aabb.getAbsMinZ()),
+                                    new Point3(aabb.getAbsMinX(), aabb.getAbsMinY(), aabb.getAbsMaxZ()),
+                                    new Point3(aabb.getAbsMaxX(), aabb.getAbsMinY(), aabb.getAbsMaxZ()),
+                                    new Point3(aabb.getAbsMaxX(), aabb.getAbsMinY(), aabb.getAbsMinZ())),
+                            new Vector3(motionX, motionY, motionZ), aabb, CollisionSide.Yp));
+                }
+                if (motionY < 0) {
+                    sides.add(new CollisionSide(
+                            new Quad3(
+                                    new Point3(boundingBox.getAbsMinX(), boundingBox.getAbsMinY(), boundingBox.getAbsMinZ()),
+                                    new Point3(boundingBox.getAbsMinX(), boundingBox.getAbsMinY(), boundingBox.getAbsMaxZ()),
+                                    new Point3(boundingBox.getAbsMaxX(), boundingBox.getAbsMinY(), boundingBox.getAbsMaxZ()),
+                                    new Point3(boundingBox.getAbsMaxX(), boundingBox.getAbsMinY(), boundingBox.getAbsMinZ())),
+                            new Quad3(
+                                    new Point3(aabb.getAbsMinX(), aabb.getAbsMaxY(), aabb.getAbsMinZ()),
+                                    new Point3(aabb.getAbsMinX(), aabb.getAbsMaxY(), aabb.getAbsMaxZ()),
+                                    new Point3(aabb.getAbsMaxX(), aabb.getAbsMaxY(), aabb.getAbsMaxZ()),
+                                    new Point3(aabb.getAbsMaxX(), aabb.getAbsMaxY(), aabb.getAbsMinZ())),
+                            new Vector3(motionX, motionY, motionZ), aabb, CollisionSide.Yn));
+                }
+                if (motionX > 0) {
+                    sides.add(new CollisionSide(
+                            new Quad3(
+                                    new Point3(boundingBox.getAbsMaxX(), boundingBox.getAbsMaxY(), boundingBox.getAbsMaxZ()),
+                                    new Point3(boundingBox.getAbsMaxX(), boundingBox.getAbsMaxY(), boundingBox.getAbsMinZ()),
+                                    new Point3(boundingBox.getAbsMaxX(), boundingBox.getAbsMinY(), boundingBox.getAbsMinZ()),
+                                    new Point3(boundingBox.getAbsMaxX(), boundingBox.getAbsMinY(), boundingBox.getAbsMaxZ())),
+                            new Quad3(
+                                    new Point3(aabb.getAbsMinX(), aabb.getAbsMaxY(), aabb.getAbsMaxZ()),
+                                    new Point3(aabb.getAbsMinX(), aabb.getAbsMaxY(), aabb.getAbsMinZ()),
+                                    new Point3(aabb.getAbsMinX(), aabb.getAbsMinY(), aabb.getAbsMinZ()),
+                                    new Point3(aabb.getAbsMinX(), aabb.getAbsMinY(), aabb.getAbsMaxZ())),
+                            new Vector3(motionX, motionY, motionZ), aabb, CollisionSide.Xp));
+                }
+                if (motionX < 0) {
+                    sides.add(new CollisionSide(
+                            new Quad3(
+                                    new Point3(boundingBox.getAbsMinX(), boundingBox.getAbsMaxY(), boundingBox.getAbsMaxZ()),
+                                    new Point3(boundingBox.getAbsMinX(), boundingBox.getAbsMaxY(), boundingBox.getAbsMinZ()),
+                                    new Point3(boundingBox.getAbsMinX(), boundingBox.getAbsMinY(), boundingBox.getAbsMinZ()),
+                                    new Point3(boundingBox.getAbsMinX(), boundingBox.getAbsMinY(), boundingBox.getAbsMaxZ())),
+                            new Quad3(
+                                    new Point3(aabb.getAbsMaxX(), aabb.getAbsMaxY(), aabb.getAbsMaxZ()),
+                                    new Point3(aabb.getAbsMaxX(), aabb.getAbsMaxY(), aabb.getAbsMinZ()),
+                                    new Point3(aabb.getAbsMaxX(), aabb.getAbsMinY(), aabb.getAbsMinZ()),
+                                    new Point3(aabb.getAbsMaxX(), aabb.getAbsMinY(), aabb.getAbsMaxZ())),
+                            new Vector3(motionX, motionY, motionZ), aabb, CollisionSide.Xn));
+                }
+                if (motionZ > 0) {
+                    sides.add(new CollisionSide(
+                            new Quad3(
+                                    new Point3(boundingBox.getAbsMinX(), boundingBox.getAbsMinY(), boundingBox.getAbsMaxZ()),
+                                    new Point3(boundingBox.getAbsMinX(), boundingBox.getAbsMaxY(), boundingBox.getAbsMaxZ()),
+                                    new Point3(boundingBox.getAbsMaxX(), boundingBox.getAbsMaxY(), boundingBox.getAbsMaxZ()),
+                                    new Point3(boundingBox.getAbsMaxX(), boundingBox.getAbsMinY(), boundingBox.getAbsMaxZ())),
+                            new Quad3(
+                                    new Point3(aabb.getAbsMinX(), aabb.getAbsMinY(), aabb.getAbsMinZ()),
+                                    new Point3(aabb.getAbsMinX(), aabb.getAbsMaxY(), aabb.getAbsMinZ()),
+                                    new Point3(aabb.getAbsMaxX(), aabb.getAbsMaxY(), aabb.getAbsMinZ()),
+                                    new Point3(aabb.getAbsMaxX(), aabb.getAbsMinY(), aabb.getAbsMinZ())),
+                            new Vector3(motionX, motionY, motionZ), aabb, CollisionSide.Zp));
+                }
+                if (motionZ < 0) {
+                    sides.add(new CollisionSide(
+                            new Quad3(
+                                    new Point3(boundingBox.getAbsMinX(), boundingBox.getAbsMinY(), boundingBox.getAbsMinZ()),
+                                    new Point3(boundingBox.getAbsMinX(), boundingBox.getAbsMaxY(), boundingBox.getAbsMinZ()),
+                                    new Point3(boundingBox.getAbsMaxX(), boundingBox.getAbsMaxY(), boundingBox.getAbsMinZ()),
+                                    new Point3(boundingBox.getAbsMaxX(), boundingBox.getAbsMinY(), boundingBox.getAbsMinZ())),
+                            new Quad3(
+                                    new Point3(aabb.getAbsMinX(), aabb.getAbsMinY(), aabb.getAbsMaxZ()),
+                                    new Point3(aabb.getAbsMinX(), aabb.getAbsMaxY(), aabb.getAbsMaxZ()),
+                                    new Point3(aabb.getAbsMaxX(), aabb.getAbsMaxY(), aabb.getAbsMaxZ()),
+                                    new Point3(aabb.getAbsMaxX(), aabb.getAbsMinY(), aabb.getAbsMaxZ())),
+                            new Vector3(motionX, motionY, motionZ), aabb, CollisionSide.Zn));
+                }
             }
             //posX = aabb.getAbsMinX() - boundingBox.maxX;
             //posX = aabb.getAbsMaxX() - boundingBox.minX;
@@ -380,12 +393,14 @@ public class Test {
             CollisionSide side = sides.get(i);
             switch (side.type) {
                 case CollisionSide.Yp:
+                    drawAABB(side.aabb);
                     if (side.intersect()) {
                         posY = side.aabb.getAbsMinY() - boundingBox.maxY - block;
                         motionY = 0;
                     }
                     break;
                 case CollisionSide.Yn:
+                    drawAABB(side.aabb);
                     if (side.intersect()) {
                         posY = side.aabb.getAbsMaxY() - boundingBox.minY + block;
                         canJump = true;
@@ -399,24 +414,28 @@ public class Test {
                     }
                     break;
                 case CollisionSide.Xp:
+                    drawAABB(side.aabb);
                     if (side.intersect()) {
                         posX = side.aabb.getAbsMinX() - boundingBox.maxX - block;
                         motionX = 0;
                     }
                     break;
                 case CollisionSide.Xn:
+                    drawAABB(side.aabb);
                     if (side.intersect()) {
                         posX = side.aabb.getAbsMaxX() - boundingBox.minX + block;
                         motionX = 0;
                     }
                     break;
                 case CollisionSide.Zp:
+                    drawAABB(side.aabb);
                     if (side.intersect()) {
                         posZ = side.aabb.getAbsMinZ() - boundingBox.maxZ - block;
                         motionZ = 0;
                     }
                     break;
                 case CollisionSide.Zn:
+                    drawAABB(side.aabb);
                     if (side.intersect()) {
                         posZ = side.aabb.getAbsMaxZ() - boundingBox.minZ + block;
                         motionZ = 0;
@@ -517,15 +536,20 @@ public class Test {
                 }
             }
         }
-        drawPlayer(posX, posY, posZ);
+        draw();
+        drawPlayer();
     }
 
-    private static void drawPlayer(double xPos, double yPos, double zPos) {
+    private static void drawPlayer() {
+        drawAABB(boundingBox);
         glMatrixMode(GL_MODELVIEW);
         glPushMatrix();
         glLoadIdentity();
 
-        glTranslated(xPos, yPos, zPos);
+//        glEnable(GL_LIGHTING);
+//        glEnable(GL_LIGHT0);
+
+        glTranslated(boundingBox.x, boundingBox.y, boundingBox.z);
         // glTranslated(xOffset, yOffset, zOffset);
 
         glEnableClientState(GL_VERTEX_ARRAY);
@@ -543,98 +567,52 @@ public class Test {
         glPopMatrix();
     }
 
-    public static void drawCube(double x, double y, double z, double xSize, double ySize, double zSize, double alpha) {
-        glEnable(GL_LIGHTING);
-        glEnable(GL_LIGHT0);
-        glBegin(GL_QUADS);
-
-        //back
-        glColor4d(1, 0, 0, alpha);
-        glNormal3d(0, 0, -1);
-        glVertex3d(x, y, z);
-        glVertex3d(x, y + ySize, z);
-        glVertex3d(x + xSize, y + ySize, z);
-        glVertex3d(x + xSize, y, z);
-        //front
-        glColor4d(0, 1, 0, alpha);
-        glNormal3d(0, 0, 1);
-        glVertex3d(x, y + ySize, z + zSize);
-        glVertex3d(x, y, z + zSize);
-        glVertex3d(x + xSize, y, z + zSize);
-        glVertex3d(x + xSize, y + ySize, z + zSize);
-        //down
-        glColor4d(1, 1, 0, alpha);
-        glNormal3d(0, -1, 0);
-        glVertex3d(x + xSize, y, z);
-        glVertex3d(x + xSize, y, z + zSize);
-        glVertex3d(x, y, z + zSize);
-        glVertex3d(x, y, z);
-        //up
-        glColor4d(0, 0, 1, alpha);
-        glNormal3d(0, 1, 0);
-        glVertex3d(x, y + ySize, z);
-        glVertex3d(x, y + ySize, z + zSize);
-        glVertex3d(x + xSize, y + ySize, z + zSize);
-        glVertex3d(x + xSize, y + ySize, z);
-        //left
-        glColor4d(1, 0, 1, alpha);
-        glNormal3d(-1, 0, 0);
-        glVertex3d(x, y + ySize, z + zSize);
-        glVertex3d(x, y + ySize, z);
-        glVertex3d(x, y, z);
-        glVertex3d(x, y, z + zSize);
-        //right
-        glColor4d(1, 1, 1, alpha);
-        glNormal3d(1, 0, 0);
-        glVertex3d(x + xSize, y, z);
-        glVertex3d(x + xSize, y + ySize, z);
-        glVertex3d(x + xSize, y + ySize, z + zSize);
-        glVertex3d(x + xSize, y, z + zSize);
-        glEnd();
-
+    public static void drawBoundingBox(double x, double y, double z, double xSize, double ySize, double zSize) {
         glColor3d(0, 0, 0);
         glDisable(GL_LIGHTING);
         glDisable(GL_LIGHT0);
         glBegin(GL_LINES);
-        //back
-        glVertex3d(x, y, z);
-        glVertex3d(x, y + ySize, z);
-        glVertex3d(x + xSize, y + ySize, z);
-        glVertex3d(x + xSize, y, z);
-        //front
-        glVertex3d(x, y + ySize, z + zSize);
-        glVertex3d(x, y, z + zSize);
-        glVertex3d(x + xSize, y, z + zSize);
-        glVertex3d(x + xSize, y + ySize, z + zSize);
-        //down
-        glVertex3d(x + xSize, y, z);
-        glVertex3d(x + xSize, y, z + zSize);
-        glVertex3d(x + xSize, y, z + zSize);
-        glVertex3d(x, y, z + zSize);
-        glVertex3d(x, y, z + zSize);
-        glVertex3d(x, y, z);
-        glVertex3d(x + xSize, y, z);
-        glVertex3d(x, y, z);
-        //up
-        glVertex3d(x, y + ySize, z);
-        glVertex3d(x, y + ySize, z + zSize);
-        glVertex3d(x, y + ySize, z + zSize);
-        glVertex3d(x, y + ySize, z + zSize);
-        glVertex3d(x + xSize, y + ySize, z + zSize);
-        glVertex3d(x + xSize, y + ySize, z + zSize);
-        glVertex3d(x + xSize, y + ySize, z);
-        glVertex3d(x, y + ySize, z);
-        glVertex3d(x + xSize, y + ySize, z);
-        //left
-        glVertex3d(x, y + ySize, z + zSize);
-        glVertex3d(x, y + ySize, z);
-        glVertex3d(x, y, z);
-        glVertex3d(x, y, z + zSize);
-        //right
-        glVertex3d(x + xSize, y, z);
-        glVertex3d(x + xSize, y + ySize, z);
-        glVertex3d(x + xSize, y + ySize, z + zSize);
-        glVertex3d(x + xSize, y, z + zSize);
+        {
+            //back
+            glVertex3d(x, y, z);
+            glVertex3d(x, y + ySize, z);
+            glVertex3d(x + xSize, y + ySize, z);
+            glVertex3d(x + xSize, y, z);
+            //front
+            glVertex3d(x, y + ySize, z + zSize);
+            glVertex3d(x, y, z + zSize);
+            glVertex3d(x + xSize, y, z + zSize);
+            glVertex3d(x + xSize, y + ySize, z + zSize);
+            //down
+            glVertex3d(x + xSize, y, z);
+            glVertex3d(x + xSize, y, z + zSize);
+            glVertex3d(x + xSize, y, z + zSize);
+            glVertex3d(x, y, z + zSize);
+            glVertex3d(x, y, z + zSize);
+            glVertex3d(x, y, z);
+            glVertex3d(x + xSize, y, z);
+            glVertex3d(x, y, z);
+            //up
+            glVertex3d(x, y + ySize, z);
+            glVertex3d(x, y + ySize, z + zSize);
+            glVertex3d(x, y + ySize, z + zSize);
+            glVertex3d(x, y + ySize, z + zSize);
+            glVertex3d(x + xSize, y + ySize, z + zSize);
+            glVertex3d(x + xSize, y + ySize, z + zSize);
+            glVertex3d(x + xSize, y + ySize, z);
+            glVertex3d(x, y + ySize, z);
+            glVertex3d(x + xSize, y + ySize, z);
+            //left
+            glVertex3d(x, y + ySize, z + zSize);
+            glVertex3d(x, y + ySize, z);
+            glVertex3d(x, y, z);
+            glVertex3d(x, y, z + zSize);
+            //right
+            glVertex3d(x + xSize, y, z);
+            glVertex3d(x + xSize, y + ySize, z);
+            glVertex3d(x + xSize, y + ySize, z + zSize);
+            glVertex3d(x + xSize, y, z + zSize);
+        }
         glEnd();
     }
 

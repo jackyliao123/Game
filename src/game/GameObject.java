@@ -26,17 +26,20 @@ public class GameObject {
         faces[0] = new Face(new Vertex[]{
                 new Vertex(
                         new Vector3(minX, minY, minZ),
-                        new Color(255, 0, 0, 255)),
+                        new Color(255, 0, 0, 255)
+                ),
                 new Vertex(
                         new Vector3(minX, maxY, minZ),
-                        new Color(255, 0, 0, 255)),
+                        new Color(255, 0, 0, 255)
+                ),
                 new Vertex(
                         new Vector3(maxX, maxY, minZ),
-                        new Color(255, 0, 0, 255)),
+                        new Color(255, 0, 0, 255)
+                ),
                 new Vertex(
                         new Vector3(maxX, minY, minZ),
-                        new Color(255, 0, 0, 255))},
-                new int[]{0, 1, 2, 3});
+                        new Color(255, 0, 0, 255)
+                )}, new int[]{0, 1, 2, 3});
         // front
         faces[1] = new Face(new Vertex[]{
                 new Vertex(
