@@ -22,7 +22,6 @@ import java.util.ArrayList;
 import java.util.Random;
 
 import static org.lwjgl.opengl.GL11.*;
-import static org.lwjgl.opengl.GL11.glLoadIdentity;
 import static org.lwjgl.opengl.GL15.*;
 
 public class Test {
@@ -40,7 +39,7 @@ public class Test {
     public static ArrayList<AABB> aabbs = new ArrayList<AABB>();
     public static ArrayList<GameObject> objects = new ArrayList<GameObject>();
     public static GameObject player;
-    public static double speed = 1.5;
+    public static double speed = 10;
     public static int x;
     public static int y;
     public static int z;
@@ -276,12 +275,12 @@ public class Test {
     }
 
     public static boolean shouldCollide(AABB aabb) {
-        boolean c0 = aabb.getAbsMaxY() > boundingBox.getAbsMinY() + motionY;
-        boolean c1 = aabb.getAbsMinY() < boundingBox.getAbsMaxY() + motionY;
-        boolean c2 = aabb.getAbsMaxX() > boundingBox.getAbsMinX() + motionX;
-        boolean c3 = aabb.getAbsMinX() < boundingBox.getAbsMaxX() + motionX;
-        boolean c4 = aabb.getAbsMaxZ() > boundingBox.getAbsMinZ() + motionZ;
-        boolean c5 = aabb.getAbsMinZ() < boundingBox.getAbsMaxZ() + motionZ;
+        boolean c0 = aabb.getAbsMaxY() >= boundingBox.getAbsMinY();
+        boolean c1 = aabb.getAbsMinY() <= boundingBox.getAbsMaxY() + motionY;
+        boolean c2 = aabb.getAbsMaxX() >= boundingBox.getAbsMinX();
+        boolean c3 = aabb.getAbsMinX() <= boundingBox.getAbsMaxX() + motionX;
+        boolean c4 = aabb.getAbsMaxZ() >= boundingBox.getAbsMinZ();
+        boolean c5 = aabb.getAbsMinZ() <= boundingBox.getAbsMaxZ() + motionZ;
 
         boolean b0 = c0 && c1 && c2 && c3 && c4 && c5;
 
@@ -290,7 +289,8 @@ public class Test {
 
     public static void collide() {
         PriorityQueue<CollisionSide> sides = new PriorityQueue<CollisionSide>();
-        for (AABB aabb : aabbs) {
+        System.out.println(motionX + ", " + motionZ);
+            for (AABB aabb : aabbs) {
             if (shouldCollide(aabb)) {
 
                 if (motionY > 0) {
