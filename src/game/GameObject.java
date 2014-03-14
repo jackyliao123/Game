@@ -26,36 +26,44 @@ public class GameObject {
         faces[0] = new Face(new Vertex[]{
                 new Vertex(
                         new Vector3(minX, minY, minZ),
+                        new Vector3(0, 0, 1),
                         new Color(255, 0, 0, 255)
                 ),
                 new Vertex(
                         new Vector3(minX, maxY, minZ),
+                        new Vector3(0, 0, 1),
                         new Color(255, 0, 0, 255)
                 ),
                 new Vertex(
                         new Vector3(maxX, maxY, minZ),
+                        new Vector3(0, 0, 1),
                         new Color(255, 0, 0, 255)
                 ),
                 new Vertex(
                         new Vector3(maxX, minY, minZ),
+                        new Vector3(0, 0, 1),
                         new Color(255, 0, 0, 255)
                 )}, new int[]{0, 1, 2, 3});
         // front
         faces[1] = new Face(new Vertex[]{
                 new Vertex(
                         new Vector3(minX, maxY, maxZ),
+                        new Vector3(0, 0, 1),
                         new Color(0, 0, 255, 255)
                 ),
                 new Vertex(
                         new Vector3(minX, minY, maxZ),
+                        new Vector3(0, 0, 1),
                         new Color(0, 0, 255, 255)
                 ),
                 new Vertex(
                         new Vector3(maxX, minY, maxZ),
+                        new Vector3(0, 0, 1),
                         new Color(0, 0, 255, 255)
                 ),
                 new Vertex(
                         new Vector3(maxX, maxY, maxZ),
+                        new Vector3(0, 0, 1),
                         new Color(0, 0, 255, 255)
                 )
         }, new int[]{0, 1, 2, 3});
@@ -63,36 +71,44 @@ public class GameObject {
         faces[2] = new Face(new Vertex[]{
                 new Vertex(
                         new Vector3(maxX, minY, minZ),
+                        new Vector3(0, -1, 0),
                         new Color(255, 255, 0, 255)
                 ),
                 new Vertex(
                         new Vector3(maxX, minY, maxZ),
+                        new Vector3(0, -1, 0),
                         new Color(255, 255, 0, 255)
                 ),
                 new Vertex(
                         new Vector3(minX, minY, maxZ),
+                        new Vector3(0, -1, 0),
                         new Color(255, 255, 0, 255)
                 ),
                 new Vertex(
                         new Vector3(minX, minY, minZ),
+                        new Vector3(0, -1, 0),
                         new Color(255, 255, 0, 255))
         }, new int[]{0, 1, 2, 3});
         // up
         faces[3] = new Face(new Vertex[]{
                 new Vertex(
                         new Vector3(minX, maxY, minZ),
+                        new Vector3(0, 1, 0),
                         new Color(0, 255, 0, 255)
                 ),
                 new Vertex(
                         new Vector3(minX, maxY, maxZ),
+                        new Vector3(0, 1, 0),
                         new Color(0, 255, 0, 255)
                 ),
                 new Vertex(
                         new Vector3(maxX, maxY, maxZ),
+                        new Vector3(0, 1, 0),
                         new Color(0, 255, 0, 255)
                 ),
                 new Vertex(
                         new Vector3(maxX, maxY, minZ),
+                        new Vector3(0, 1, 0),
                         new Color(0, 255, 0, 255)
                 )
         }, new int[]{0, 1, 2, 3});
@@ -100,33 +116,42 @@ public class GameObject {
         faces[4] = new Face(new Vertex[]{
                 new Vertex(
                         new Vector3(minX, maxY, maxZ),
+                        new Vector3(-1, 0, 0),
                         new Color(255, 0, 255, 255)
                 ),
                 new Vertex(new Vector3(minX, maxY, minZ),
+                        new Vector3(-1, 0, 0),
                         new Color(255, 0, 255, 255)
                 ),
                 new Vertex(new Vector3(minX, minY, minZ),
+                        new Vector3(-1, 0, 0),
                         new Color(255, 0, 255, 255)
                 ),
                 new Vertex(new Vector3(minX, minY, maxZ),
+                        new Vector3(-1, 0, 0),
                         new Color(255, 0, 255, 255)
                 )
         }, new int[]{0, 1, 2, 3});
+        //right
         faces[5] = new Face(new Vertex[]{
                 new Vertex(
                         new Vector3(maxX, minY, minZ),
+                        new Vector3(1, 0, 0),
                         new Color(255, 255, 255, 255)
                 ),
                 new Vertex(
                         new Vector3(maxX, maxY, minZ),
+                        new Vector3(1, 0, 0),
                         new Color(255, 255, 255, 255)
                 ),
                 new Vertex(
                         new Vector3(maxX, maxY, maxZ),
+                        new Vector3(1, 0, 0),
                         new Color(255, 255, 255, 255)
                 ),
                 new Vertex(
                         new Vector3(maxX, minY, maxZ),
+                        new Vector3(1, 0, 0),
                         new Color(255, 255, 255, 255)
                 )
         }, new int[]{0, 1, 2, 3});
