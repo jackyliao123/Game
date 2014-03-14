@@ -8,6 +8,7 @@ public class VBO {
     private VBOObject obj;
     private Vector3 normal = new Vector3(0, 0, 0);
     private Color color = new Color(1, 1, 1);
+    private Point2 textureCoord = new Point2(0, 0);
 
     public void glBegin(int type) {
         obj = new VBOObject(type);
@@ -15,6 +16,10 @@ public class VBO {
 
     public void glNormal3d(double x, double y, double z) {
         normal = new Vector3(x, y, z);
+    }
+
+    public void glTexCoord2d(double x, double y) {
+        textureCoord = new Point2(x, y);
     }
 
     public void glColor4i(int r, int g, int b, int a) {
@@ -36,6 +41,7 @@ public class VBO {
     public void glVertex3d(double x, double y, double z) {
         obj.normal = normal;
         obj.color = color;
+        obj.texCoord = textureCoord;
         obj.glVertex3d(x, y, z);
     }
 

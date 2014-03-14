@@ -14,6 +14,7 @@ import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.nio.FloatBuffer;
 import java.util.ArrayList;
@@ -55,10 +56,13 @@ public class Test {
     public static final double block = 1e-8;
     public static VBO vbo = new VBO();
 
+    static int blockTexture;
+
     public static void main(String[] args) {
         try {
             Display.setDisplayMode(new DisplayMode(800, 600));
             Display.create(new PixelFormat(8, 8, 0, 0));
+            Display.setResizable(true);
             glEnable(GL_DEPTH_TEST);
             glEnable(GL_CULL_FACE);
             glCullFace(GL_BACK);
@@ -74,11 +78,11 @@ public class Test {
             //glEnable(GL_MULTISAMPLE);
             Mouse.setGrabbed(true);
             Random random = new Random(0);
-            for (int i = 0; i < 32; i++) {
-                for (int j = 0; j < 32; j++) {
-                    for (int k = 0; k < 32; k++) {
+            for (int i = 0; i < 16; i++) {
+                for (int j = 0; j < 16; j++) {
+                    for (int k = 0; k < 16; k++) {
                         // if (random.nextInt() % 5 == 0) {
-                            aabbs.add(new AABB(i, j, k, 0, 0, 0, 1, 1, 1));
+                        aabbs.add(new AABB(i, j, k, 0, 0, 0, 1, 1, 1));
                         //}
                     }
                     //aabbs.add(new AABB(i, 0, j, 0, 0, 0, 1, 1, 1));
@@ -96,7 +100,8 @@ public class Test {
 
             //aabbs.add(new AABB(10, 10, 10, 0, 0, 0, 2, 2, 2));
             try {
-                texture = loadTexture(new File("a.png"));
+                texture1 = loadTexture(Test.class.getResourceAsStream("/textures/a.png"));
+                blockTexture = loadTexture(Test.class.getResourceAsStream("/textures/texture.png"));
             } catch (IOException e) {
                 // TODO Auto-generated catch block
                 e.printStackTrace();
@@ -120,10 +125,17 @@ public class Test {
                     Mouse.setCursorPosition(Display.getWidth() / 2, Display.getHeight() / 2);
                     Mouse.setGrabbed(true);
                 }
+                updateDisplay();
                 handleInput();
                 glEnable(GL_LIGHTING);
                 glEnable(GL_LIGHT0);
+
+                glEnable(GL_TEXTURE_2D);
+                glBindTexture(GL_TEXTURE_2D, blockTexture);
                 vbo.render();
+
+                glDisable(GL_TEXTURE_2D);
+
                 //glDisable(GL_CULL_FACE);
                 handleMovement();
                 drawAABB(boundingBox, 0.5);
@@ -131,10 +143,17 @@ public class Test {
                 //drawCube(boundingBox.x - boundingBox.minX, boundingBox.y - boundingBox.minY, boundingBox.z - boundingBox.minZ, boundingBox.maxX - boundingBox.minX, boundingBox.maxY - boundingBox.minY, boundingBox.maxZ - boundingBox.minZ, 0.5);
                 glEnable(GL_CULL_FACE);
                 Display.update();
-                //Display.sync(60);
+                Display.sync(60);
             }
         } catch (LWJGLException e) {
             e.printStackTrace();
+        }
+    }
+
+    private static void updateDisplay() {
+        if (Display.wasResized()) {
+            glViewport(0, 0, Display.getWidth(), Display.getHeight());
+            GLU.gluPerspective(fov, (float) Display.getWidth() / (float) Display.getHeight(), 0.01f, 1000f);
         }
     }
 
@@ -439,47 +458,72 @@ public class Test {
     }
 
     public static void initCube(double x, double y, double z, double xSize, double ySize, double zSize, double alpha) {
+        vbo.glColor4d(1, 1, 1, alpha);
         //back
-        vbo.glColor4d(1, 0, 0, alpha);
+//        vbo.glColor4d(1, 0, 0, alpha);
         vbo.glNormal3d(0, 0, -1);
+        vbo.glTexCoord2d(0, 0);
         vbo.glVertex3d(x, y, z);
+        vbo.glTexCoord2d(0, 1);
         vbo.glVertex3d(x, y + ySize, z);
+        vbo.glTexCoord2d(1, 1);
         vbo.glVertex3d(x + xSize, y + ySize, z);
+        vbo.glTexCoord2d(1, 0);
         vbo.glVertex3d(x + xSize, y, z);
         //front
-        vbo.glColor4d(0, 1, 0, alpha);
+//        vbo.glColor4d(0, 1, 0, alpha);
         vbo.glNormal3d(0, 0, 1);
+        vbo.glTexCoord2d(0, 0);
         vbo.glVertex3d(x, y + ySize, z + zSize);
+        vbo.glTexCoord2d(0, 1);
         vbo.glVertex3d(x, y, z + zSize);
+        vbo.glTexCoord2d(1, 1);
         vbo.glVertex3d(x + xSize, y, z + zSize);
+        vbo.glTexCoord2d(1, 0);
         vbo.glVertex3d(x + xSize, y + ySize, z + zSize);
         //down
-        vbo.glColor4d(1, 1, 0, alpha);
+//        vbo.glColor4d(1, 1, 0, alpha);
         vbo.glNormal3d(0, -1, 0);
+        vbo.glTexCoord2d(0, 0);
         vbo.glVertex3d(x + xSize, y, z);
+        vbo.glTexCoord2d(0, 1);
         vbo.glVertex3d(x + xSize, y, z + zSize);
+        vbo.glTexCoord2d(1, 1);
         vbo.glVertex3d(x, y, z + zSize);
+        vbo.glTexCoord2d(1, 0);
         vbo.glVertex3d(x, y, z);
         //up
-        vbo.glColor4d(0, 0, 1, alpha);
+//        vbo.glColor4d(0, 0, 1, alpha);
         vbo.glNormal3d(0, 1, 0);
+        vbo.glTexCoord2d(0, 0);
         vbo.glVertex3d(x, y + ySize, z);
+        vbo.glTexCoord2d(0, 1);
         vbo.glVertex3d(x, y + ySize, z + zSize);
+        vbo.glTexCoord2d(1, 1);
         vbo.glVertex3d(x + xSize, y + ySize, z + zSize);
+        vbo.glTexCoord2d(1, 0);
         vbo.glVertex3d(x + xSize, y + ySize, z);
         //left
-        vbo.glColor4d(1, 0, 1, alpha);
+//        vbo.glColor4d(1, 0, 1, alpha);
         vbo.glNormal3d(-1, 0, 0);
+        vbo.glTexCoord2d(0, 0);
         vbo.glVertex3d(x, y + ySize, z + zSize);
+        vbo.glTexCoord2d(0, 1);
         vbo.glVertex3d(x, y + ySize, z);
+        vbo.glTexCoord2d(1, 1);
         vbo.glVertex3d(x, y, z);
+        vbo.glTexCoord2d(1, 0);
         vbo.glVertex3d(x, y, z + zSize);
         //right
-        vbo.glColor4d(1, 1, 1, alpha);
+//        vbo.glColor4d(1, 1, 1, alpha);
         vbo.glNormal3d(1, 0, 0);
+        vbo.glTexCoord2d(0, 0);
         vbo.glVertex3d(x + xSize, y, z);
+        vbo.glTexCoord2d(0, 1);
         vbo.glVertex3d(x + xSize, y + ySize, z);
+        vbo.glTexCoord2d(1, 1);
         vbo.glVertex3d(x + xSize, y + ySize, z + zSize);
+        vbo.glTexCoord2d(1, 0);
         vbo.glVertex3d(x + xSize, y, z + zSize);
 
         vbo.glColor3d(0, 0, 0);
@@ -525,11 +569,11 @@ public class Test {
 		vbo.glEnd();*/
     }
 
-    static int texture;
+    static int texture1;
 
     public static void drawCube(double x, double y, double z, double xSize, double ySize, double zSize, double alpha) {
         glEnable(GL_TEXTURE_2D);
-        glBindTexture(GL_TEXTURE_2D, texture);
+        glBindTexture(GL_TEXTURE_2D, texture1);
         glEnable(GL_LIGHTING);
         glEnable(GL_LIGHT0);
         glBegin(GL_QUADS);
@@ -634,7 +678,7 @@ public class Test {
 //		glEnd();
     }
 
-    public static int loadTexture(File f) throws IOException {
+    public static int loadTexture(InputStream f) throws IOException {
         BufferedImage image = ImageIO.read(f);
         int[] pixels = new int[image.getWidth() * image.getHeight()];
         image.getRGB(0, 0, image.getWidth(), image.getHeight(), pixels, 0, image.getWidth());
