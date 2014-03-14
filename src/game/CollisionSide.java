@@ -1,7 +1,4 @@
-package game.collision;
-
-import game.collision.geom.Point3;
-import game.collision.geom.Quad3;
+package game;
 
 public class CollisionSide implements Comparable<CollisionSide> {
 

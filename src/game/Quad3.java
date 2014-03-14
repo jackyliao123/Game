@@ -1,4 +1,4 @@
-package game.collision.geom;
+package game;
 
 public class Quad3 {
 

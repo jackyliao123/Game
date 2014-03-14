@@ -1,6 +1,4 @@
-package game.collision.geom;
-
-import game.Vector3;
+package game;
 
 public class Point3 {
 
@@ -35,6 +33,10 @@ public class Point3 {
         double ydist = y - point.y;
         double zdist = z - point.z;
         return xdist * xdist + ydist * ydist + zdist * zdist;
+    }
+
+    public String toString() {
+        return "[x: " + x + ", y: " + y + ", z: " + z + "]";
     }
 
 }

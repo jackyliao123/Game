@@ -1,9 +1,7 @@
-package game.collision;
-
-import game.Vector3;
-import game.collision.geom.*;
+package game;
 
 public class AABB {
+
     public double x;
     public double y;
     public double z;
@@ -63,7 +61,7 @@ public class AABB {
     }
 
     public Point3 getCenterPoint() {
-        return new Point3(x + (minX + maxX) / 2.0, y + (minY + maxY) / 2.0, z + (minZ + maxZ) / 2);
+        return new Point3(x + (minX + maxX) / 2.0, y + (minY + maxY) / 2.0, z + (minZ + maxZ) / 2.0);
     }
 
     public boolean intersects(AABB aabb) {
@@ -135,22 +133,6 @@ public class AABB {
         Line2 l1 = new Line2(qSta.points[0].flattenX(), qSta.points[1].flattenX());
         Line2 l2 = new Line2(qSta.points[1].flattenY(), qSta.points[2].flattenY());
         if (intersects(q1, l1) && intersects(q2, l2)) {
-//            System.out.println("l1");
-//            for (Point2 point : l1.points) {
-//                System.out.println(point.x + ", " + point.y);
-//            }
-//            System.out.println("~~~~~~~~~~");
-//            for (Point2 point : q1.points) {
-//                System.out.println(point.x + ", " + point.y);
-//            }
-//            System.out.println("l2");
-//            for (Point2 point : l2.points) {
-//                System.out.println(point.x + ", " + point.y);
-//            }
-//            System.out.println("~~~~~~~~~~");
-//            for (Point2 point : q2.points) {
-//                System.out.println(point.x + ", " + point.y);
-//            }
             return true;
         }
         return false;

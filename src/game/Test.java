@@ -1,30 +1,36 @@
 package game;
 
-import game.collision.AABB;
-import game.collision.CollisionSide;
-import game.collision.geom.Point3;
-import game.collision.geom.Quad3;
 import org.lwjgl.BufferUtils;
 import org.lwjgl.LWJGLException;
 import org.lwjgl.input.Keyboard;
 import org.lwjgl.input.Mouse;
 import org.lwjgl.opengl.Display;
 import org.lwjgl.opengl.DisplayMode;
+import org.lwjgl.opengl.GL12;
+import org.lwjgl.opengl.PixelFormat;
 import org.lwjgl.util.glu.GLU;
 
+import javax.imageio.ImageIO;
+import java.awt.image.BufferedImage;
+import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.nio.DoubleBuffer;
 import java.nio.FloatBuffer;
-import java.nio.IntBuffer;
 import java.util.ArrayList;
 import java.util.PriorityQueue;
 import java.util.Random;
 
 import static org.lwjgl.opengl.GL11.*;
-import static org.lwjgl.opengl.GL15.*;
 
 public class Test {
+
+    static {
+        try {
+            NativeLoader.loadLwjgl();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
 
     public static double rotx;
     public static double roty;
@@ -37,11 +43,7 @@ public class Test {
     public static boolean canJump;
     public static AABB boundingBox = new AABB(0, 0, 0, -0.4, 0, -0.4, 0.4, 1.8, 0.4);
     public static ArrayList<AABB> aabbs = new ArrayList<AABB>();
-    public static ArrayList<GameObject> objects = new ArrayList<GameObject>();
     public static double speed = 0.005;
-    public static int x;
-    public static int y;
-    public static int z;
     public static boolean fly = true;
     public static double thirdPerson;
     public static int spaceTimer;
@@ -51,22 +53,12 @@ public class Test {
     public static boolean sprint = false;
     public static boolean hasFocus = true;
     public static final double block = 1e-8;
-
-    private static int vbo;
-    private static int ibo;
-    private static int nbo;
-    private static int cbo;
-    private static int size;
+    public static VBO vbo = new VBO();
 
     public static void main(String[] args) {
         try {
-            NativeLoader.loadLwjgl();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        try {
             Display.setDisplayMode(new DisplayMode(800, 600));
-            Display.create();
+            Display.create(new PixelFormat(8, 8, 0, 0));
             glEnable(GL_DEPTH_TEST);
             glEnable(GL_CULL_FACE);
             glCullFace(GL_BACK);
@@ -78,25 +70,37 @@ public class Test {
             glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
             glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST);
             glEnable(GL_LINE_SMOOTH);
-            glShadeModel(GL_SMOOTH);
+            //glShadeModel(GL_FLAT);
+            //glEnable(GL_MULTISAMPLE);
             Mouse.setGrabbed(true);
             Random random = new Random(0);
             for (int i = 0; i < 32; i++) {
                 for (int j = 0; j < 32; j++) {
                     for (int k = 0; k < 32; k++) {
-                        AABB aabb = new AABB(i, j, k, 0, 0, 0, 1, 1, 1);
-                        aabbs.add(aabb);
-                        objects.add(new GameObject(aabb));
+                        // if (random.nextInt() % 5 == 0) {
+                            aabbs.add(new AABB(i, j, k, 0, 0, 0, 1, 1, 1));
+                        //}
                     }
-//                    AABB aabb = new AABB(i, 0, j, 0, 0, 0, 1, 1, 1);
-//                    aabbs.add(aabb);
-//                    objects.add(new GameObject(aabb));
+                    //aabbs.add(new AABB(i, 0, j, 0, 0, 0, 1, 1, 1));
                 }
             }
-            initVbo();
-//            aabbs.add(new AABB(0, 0, 0, 0, 0, 0, block, 1000, 1000));
-//            aabbs.add(new AABB(1, 0, 0, 0, 0, 0, block, 1000, 1000));
-//            aabbs.add(new AABB(10, 10, 10, 0, 0, 0, 2, 2, 2));
+
+            vbo.glBegin(GL_QUADS);
+            for (AABB aabb : aabbs) {
+                initAABB(aabb, 1);
+            }
+            vbo.glEnd();
+            System.gc();
+
+            //vbo.finalize();
+
+            //aabbs.add(new AABB(10, 10, 10, 0, 0, 0, 2, 2, 2));
+            try {
+                texture = loadTexture(new File("a.png"));
+            } catch (IOException e) {
+                // TODO Auto-generated catch block
+                e.printStackTrace();
+            }
             while (!Display.isCloseRequested()) {
                 glMatrixMode(GL_PROJECTION);
                 glLoadIdentity();
@@ -105,8 +109,8 @@ public class Test {
                 glMatrixMode(GL_MODELVIEW);
                 glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
                 glLoadIdentity();
-                glLight(GL_LIGHT0, GL_POSITION, (FloatBuffer) BufferUtils.createFloatBuffer(4).put(0f).put(1f).put(0f).put(1f).flip());
-                glLight(GL_LIGHT0, GL_SPECULAR, (FloatBuffer) BufferUtils.createFloatBuffer(4).put(0f).put(1f).put(0f).put(1f).flip());
+                glLight(GL_LIGHT0, GL_POSITION, (FloatBuffer) BufferUtils.createFloatBuffer(4).put(0f).put(0f).put(0f).put(1f).flip());
+                glLight(GL_LIGHT0, GL_SPECULAR, (FloatBuffer) BufferUtils.createFloatBuffer(4).put(0f).put(0f).put(0f).put(1f).flip());
                 if (hasFocus && Keyboard.isKeyDown(Keyboard.KEY_ESCAPE)) {
                     hasFocus = false;
                     Mouse.setGrabbed(false);
@@ -117,111 +121,43 @@ public class Test {
                     Mouse.setGrabbed(true);
                 }
                 handleInput();
+                glEnable(GL_LIGHTING);
+                glEnable(GL_LIGHT0);
+                vbo.render();
+                //glDisable(GL_CULL_FACE);
                 handleMovement();
+                drawAABB(boundingBox, 0.5);
+                drawAABB(new AABB(boundingBox.x, boundingBox.y, boundingBox.z, -0.01, -0.01, -0.01, 0.01, 0.01, 0.01), 1);
+                //drawCube(boundingBox.x - boundingBox.minX, boundingBox.y - boundingBox.minY, boundingBox.z - boundingBox.minZ, boundingBox.maxX - boundingBox.minX, boundingBox.maxY - boundingBox.minY, boundingBox.maxZ - boundingBox.minZ, 0.5);
+                glEnable(GL_CULL_FACE);
                 Display.update();
-                Display.sync(60);
+                //Display.sync(60);
             }
         } catch (LWJGLException e) {
             e.printStackTrace();
         }
     }
 
-    private static void initVbo() {
-        vbo = glGenBuffers();
-        nbo = glGenBuffers();
-        ibo = glGenBuffers();
-        cbo = glGenBuffers();
-
-        createGlobalVBO();
+    public static void drawAABB(AABB aabb, double alpha) {
+        drawCube(aabb.getAbsMinX(), aabb.getAbsMinY(), aabb.getAbsMinZ(), aabb.getSizeX(), aabb.getSizeY(), aabb.getSizeZ(), alpha);
     }
 
-    private static void createGlobalVBO() {
-        ArrayList<Vertex> vertices = new ArrayList<Vertex>();
-        ArrayList<Integer> indices = new ArrayList<Integer>();
-        for (int i = 0; i < objects.size(); i++) {
-            GameObject object = objects.get(i);
-            for (int j = 0; j < object.getFaces().length; j++) {
-                Face face = object.getFaces()[j];
-                for (int k = 0; k < face.getVertices().length; k++) {
-                    vertices.add(face.getVertices()[k]);
-                    indices.add(face.getIndicies()[k] + 4 * j + i * 24);
-                }
-            }
-        }
-//        System.out.println(vertices.size());
-        DoubleBuffer vertexBuffer = BufferUtils.createDoubleBuffer(vertices.size() * 3);
-        DoubleBuffer normalBuffer = BufferUtils.createDoubleBuffer(vertices.size() * 3);
-        ByteBuffer colorBuffer = BufferUtils.createByteBuffer(vertices.size() * 4);
-        for (Vertex vertex : vertices) {
-            size++;
-            vertexBuffer.put(vertex.getPosition().x);
-            vertexBuffer.put(vertex.getPosition().y);
-            vertexBuffer.put(vertex.getPosition().z);
-            normalBuffer.put(vertex.getNormal().x);
-            normalBuffer.put(vertex.getNormal().y);
-            normalBuffer.put(vertex.getNormal().z);
-            colorBuffer.put(vertex.getColor().getRedByte());
-            colorBuffer.put(vertex.getColor().getGreenByte());
-            colorBuffer.put(vertex.getColor().getBlueByte());
-            colorBuffer.put(vertex.getColor().getAlphaByte());
-        }
-        vertexBuffer.flip();
-        normalBuffer.flip();
-        colorBuffer.flip();
-        IntBuffer indexBuffer = BufferUtils.createIntBuffer(indices.size());
-        for (Integer index : indices) {
-            indexBuffer.put(index);
-        }
-        indexBuffer.flip();
-
-        glBindBuffer(GL_ARRAY_BUFFER, vbo);
-        glBufferData(GL_ARRAY_BUFFER, vertexBuffer, GL_STATIC_DRAW);
-
-        glBindBuffer(GL_ARRAY_BUFFER, nbo);
-        glBufferData(GL_ARRAY_BUFFER, normalBuffer, GL_STATIC_DRAW);
-
-        glBindBuffer(GL_ARRAY_BUFFER, cbo);
-        glBufferData(GL_ARRAY_BUFFER, colorBuffer, GL_STATIC_DRAW);
-
-        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ibo);
-        glBufferData(GL_ELEMENT_ARRAY_BUFFER, indexBuffer, GL_STATIC_DRAW);
-    }
-
-    public static void draw() {
-        glEnable(GL_LIGHTING);
-        glEnable(GL_LIGHT0);
-
-        glMatrixMode(GL_MODELVIEW);
-
-        glEnableClientState(GL_VERTEX_ARRAY);
-        glBindBuffer(GL_ARRAY_BUFFER, vbo);
-        glVertexPointer(3, GL_DOUBLE, 0, 0);
-
-        glEnableClientState(GL_NORMAL_ARRAY);
-        glBindBuffer(GL_ARRAY_BUFFER, nbo);
-        glNormalPointer(GL_DOUBLE, 0, 0);
-
-        glEnableClientState(GL_COLOR_ARRAY);
-        glBindBuffer(GL_ARRAY_BUFFER, cbo);
-        glColorPointer(4, GL_UNSIGNED_BYTE, 0, 0);
-
-        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ibo);
-        glDrawElements(GL_QUADS, size, GL_UNSIGNED_INT, 0);
-    }
-
-    public static void drawAABB(AABB aabb) {
-        drawBoundingBox(aabb.getAbsMinX(), aabb.getAbsMinY(), aabb.getAbsMinZ(), aabb.getSizeX(), aabb.getSizeY(), aabb.getSizeZ(), 1);
+    public static void initAABB(AABB aabb, double alpha) {
+        initCube(aabb.getAbsMinX(), aabb.getAbsMinY(), aabb.getAbsMinZ(), aabb.getSizeX(), aabb.getSizeY(), aabb.getSizeZ(), alpha);
     }
 
     public static void handleMovement() {
-        canJump = false;
-        collide();
-        posX += motionX;
-        posY += motionY;
-        posZ += motionZ;
         boundingBox.x = posX;
         boundingBox.y = posY;
         boundingBox.z = posZ;
+        canJump = false;
+        //long l = System.nanoTime();
+        collide();
+        //double t = (System.nanoTime() - l) / 1000000d;
+        //System.out.println(t);
+        posX += motionX;
+        posY += motionY;
+        posZ += motionZ;
         if (posY < 0) {
             posY = 0;
             motionY = 0;
@@ -252,6 +188,7 @@ public class Test {
         double maxZ = motionZ < 0 ? boundingBox.maxZ : boundingBox.maxZ + motionZ;
         AABB playerMovement = new AABB(boundingBox.x, boundingBox.y, boundingBox.z, minX, minY, minZ, maxX, maxY, maxZ);
         PriorityQueue<CollisionSide> sides = new PriorityQueue<CollisionSide>();
+        //drawAABB(playerMovement, 0.25);
         Point3 center = boundingBox.getCenterPoint();
         for (AABB aabb : aabbs) {
             if (!playerMovement.intersects(aabb))
@@ -499,65 +436,162 @@ public class Test {
                 }
             }
         }
-        draw();
-        drawPlayer();
     }
 
-    private static void drawPlayer() {
-        drawAABB(boundingBox);
+    public static void initCube(double x, double y, double z, double xSize, double ySize, double zSize, double alpha) {
+        //back
+        vbo.glColor4d(1, 0, 0, alpha);
+        vbo.glNormal3d(0, 0, -1);
+        vbo.glVertex3d(x, y, z);
+        vbo.glVertex3d(x, y + ySize, z);
+        vbo.glVertex3d(x + xSize, y + ySize, z);
+        vbo.glVertex3d(x + xSize, y, z);
+        //front
+        vbo.glColor4d(0, 1, 0, alpha);
+        vbo.glNormal3d(0, 0, 1);
+        vbo.glVertex3d(x, y + ySize, z + zSize);
+        vbo.glVertex3d(x, y, z + zSize);
+        vbo.glVertex3d(x + xSize, y, z + zSize);
+        vbo.glVertex3d(x + xSize, y + ySize, z + zSize);
+        //down
+        vbo.glColor4d(1, 1, 0, alpha);
+        vbo.glNormal3d(0, -1, 0);
+        vbo.glVertex3d(x + xSize, y, z);
+        vbo.glVertex3d(x + xSize, y, z + zSize);
+        vbo.glVertex3d(x, y, z + zSize);
+        vbo.glVertex3d(x, y, z);
+        //up
+        vbo.glColor4d(0, 0, 1, alpha);
+        vbo.glNormal3d(0, 1, 0);
+        vbo.glVertex3d(x, y + ySize, z);
+        vbo.glVertex3d(x, y + ySize, z + zSize);
+        vbo.glVertex3d(x + xSize, y + ySize, z + zSize);
+        vbo.glVertex3d(x + xSize, y + ySize, z);
+        //left
+        vbo.glColor4d(1, 0, 1, alpha);
+        vbo.glNormal3d(-1, 0, 0);
+        vbo.glVertex3d(x, y + ySize, z + zSize);
+        vbo.glVertex3d(x, y + ySize, z);
+        vbo.glVertex3d(x, y, z);
+        vbo.glVertex3d(x, y, z + zSize);
+        //right
+        vbo.glColor4d(1, 1, 1, alpha);
+        vbo.glNormal3d(1, 0, 0);
+        vbo.glVertex3d(x + xSize, y, z);
+        vbo.glVertex3d(x + xSize, y + ySize, z);
+        vbo.glVertex3d(x + xSize, y + ySize, z + zSize);
+        vbo.glVertex3d(x + xSize, y, z + zSize);
+
+        vbo.glColor3d(0, 0, 0);
+        /*vbo.glBegin(GL_LINES);
+        //back
+		vbo.glVertex3d(x, y, z);
+		vbo.glVertex3d(x, y + ySize, z);
+		vbo.glVertex3d(x + xSize, y + ySize, z);
+		vbo.glVertex3d(x + xSize, y, z);
+		//front
+		vbo.glVertex3d(x, y + ySize, z + zSize);
+		vbo.glVertex3d(x, y, z + zSize);
+		vbo.glVertex3d(x + xSize, y, z + zSize);
+		vbo.glVertex3d(x + xSize, y + ySize, z + zSize);
+		//down
+		vbo.glVertex3d(x + xSize, y, z);
+		vbo.glVertex3d(x + xSize, y, z + zSize);
+		vbo.glVertex3d(x + xSize, y, z + zSize);
+		vbo.glVertex3d(x, y, z + zSize);
+		vbo.glVertex3d(x, y, z + zSize);
+		vbo.glVertex3d(x, y, z);
+		vbo.glVertex3d(x + xSize, y, z);
+		vbo.glVertex3d(x, y, z);
+		//up
+		vbo.glVertex3d(x, y + ySize, z);
+		vbo.glVertex3d(x, y + ySize, z + zSize);
+		vbo.glVertex3d(x, y + ySize, z + zSize);
+		vbo.glVertex3d(x + xSize, y + ySize, z + zSize);
+		vbo.glVertex3d(x + xSize, y + ySize, z + zSize);
+		vbo.glVertex3d(x + xSize, y + ySize, z);
+		vbo.glVertex3d(x, y + ySize, z);
+		vbo.glVertex3d(x + xSize, y + ySize, z);
+		//left
+		vbo.glVertex3d(x, y + ySize, z + zSize);
+		vbo.glVertex3d(x, y + ySize, z);
+		vbo.glVertex3d(x, y, z);
+		vbo.glVertex3d(x, y, z + zSize);
+		//right
+		vbo.glVertex3d(x + xSize, y, z);
+		vbo.glVertex3d(x + xSize, y + ySize, z);
+		vbo.glVertex3d(x + xSize, y + ySize, z + zSize);
+		vbo.glVertex3d(x + xSize, y, z + zSize);
+		vbo.glEnd();*/
     }
 
-    public static void drawBoundingBox(double x, double y, double z, double xSize, double ySize, double zSize, double alpha) {
+    static int texture;
+
+    public static void drawCube(double x, double y, double z, double xSize, double ySize, double zSize, double alpha) {
+        glEnable(GL_TEXTURE_2D);
+        glBindTexture(GL_TEXTURE_2D, texture);
         glEnable(GL_LIGHTING);
         glEnable(GL_LIGHT0);
         glBegin(GL_QUADS);
         //back
-        glColor4d(1, 0, 0, alpha);
+        glColor4d(1, 1, 1, alpha);
         glNormal3d(0, 0, -1);
+        glTexCoord2d(0, 1);
         glVertex3d(x, y, z);
+        glTexCoord2d(0, 0);
         glVertex3d(x, y + ySize, z);
+        glTexCoord2d(1, 0);
         glVertex3d(x + xSize, y + ySize, z);
+        glTexCoord2d(1, 1);
         glVertex3d(x + xSize, y, z);
         //front
-        glColor4d(0, 1, 0, alpha);
         glNormal3d(0, 0, 1);
+        glTexCoord2d(0, 0);
         glVertex3d(x, y + ySize, z + zSize);
+        glTexCoord2d(0, 1);
         glVertex3d(x, y, z + zSize);
+        glTexCoord2d(1, 1);
         glVertex3d(x + xSize, y, z + zSize);
+        glTexCoord2d(1, 0);
         glVertex3d(x + xSize, y + ySize, z + zSize);
         //down
-        glColor4d(1, 1, 0, alpha);
         glNormal3d(0, -1, 0);
         glVertex3d(x + xSize, y, z);
         glVertex3d(x + xSize, y, z + zSize);
         glVertex3d(x, y, z + zSize);
         glVertex3d(x, y, z);
         //up
-        glColor4d(0, 0, 1, alpha);
         glNormal3d(0, 1, 0);
         glVertex3d(x, y + ySize, z);
         glVertex3d(x, y + ySize, z + zSize);
         glVertex3d(x + xSize, y + ySize, z + zSize);
         glVertex3d(x + xSize, y + ySize, z);
         //left
-        glColor4d(1, 0, 1, alpha);
         glNormal3d(-1, 0, 0);
+        glTexCoord2d(0, 0);
         glVertex3d(x, y + ySize, z + zSize);
+        glTexCoord2d(1, 0);
         glVertex3d(x, y + ySize, z);
+        glTexCoord2d(1, 1);
         glVertex3d(x, y, z);
+        glTexCoord2d(0, 1);
         glVertex3d(x, y, z + zSize);
         //right
-        glColor4d(1, 1, 1, alpha);
         glNormal3d(1, 0, 0);
+        glTexCoord2d(1, 1);
         glVertex3d(x + xSize, y, z);
+        glTexCoord2d(1, 0);
         glVertex3d(x + xSize, y + ySize, z);
+        glTexCoord2d(0, 0);
         glVertex3d(x + xSize, y + ySize, z + zSize);
+        glTexCoord2d(0, 1);
         glVertex3d(x + xSize, y, z + zSize);
         glEnd();
 
         glColor3d(0, 0, 0);
         glDisable(GL_LIGHTING);
         glDisable(GL_LIGHT0);
+        glDisable(GL_TEXTURE_2D);
 //		glBegin(GL_LINES);
 //		//back
 //		glVertex3d(x, y, z);
@@ -598,6 +632,29 @@ public class Test {
 //		glVertex3d(x + xSize, y + ySize, z + zSize);
 //		glVertex3d(x + xSize, y, z + zSize);
 //		glEnd();
+    }
+
+    public static int loadTexture(File f) throws IOException {
+        BufferedImage image = ImageIO.read(f);
+        int[] pixels = new int[image.getWidth() * image.getHeight()];
+        image.getRGB(0, 0, image.getWidth(), image.getHeight(), pixels, 0, image.getWidth());
+        ByteBuffer buffer = BufferUtils.createByteBuffer(image.getWidth() * image.getHeight() * 4);
+        for (int i = 0; i < pixels.length; i++) {
+            int rgba = pixels[i];
+            buffer.put((byte) (rgba >> 16 & 0xFF)).put((byte) (rgba >> 8 & 0xFF)).put((byte) (rgba & 0xFF)).put((byte) (rgba >> 24 & 0xFF));
+        }
+        buffer.flip();
+        int textureID = glGenTextures();
+        glBindTexture(GL_TEXTURE_2D, textureID);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL12.GL_CLAMP_TO_EDGE);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL12.GL_CLAMP_TO_EDGE);
+
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, image.getWidth(), image.getHeight(), 0, GL_RGBA, GL_UNSIGNED_BYTE, buffer);
+
+        return textureID;
     }
 
 }
