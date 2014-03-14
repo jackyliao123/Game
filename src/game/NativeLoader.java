@@ -4,7 +4,7 @@ import java.io.*;
 
 public class NativeLoader {
 	public static void loadLwjgl() throws IOException {
-		String path = "/" + System.mapLibraryName("lwjgl");
+		String path = "/" + System.mapLibraryName("lwjgl64");
 		String[] parts = path.split("/");
 		String filename = (parts.length > 1) ? parts[parts.length - 1] : null;
 		if (filename != null) {
