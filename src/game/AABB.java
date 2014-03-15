@@ -116,6 +116,14 @@ public class AABB {
         return false;
     }
 
+    public static boolean intersectX(Quad3 quad, Line3 line) {
+        Line2 q1 = new Line2(quad.points[0].flattenY(), quad.points[1].flattenY());
+        Line2 q2 = new Line2(quad.points[1].flattenZ(), quad.points[2].flattenZ());
+        Line2 l1 = line.flattenY();
+        Line2 l2 = line.flattenZ();
+        return Util.lineIntersect(q1.points[0], q1.points[1], l1.points[0], l1.points[1]) && Util.lineIntersect(q2.points[0], q2.points[1], l2.points[0], l2.points[1]);
+    }
+
     public static boolean intersectY(Quad3 quad, Quad3 qSta, Vector3 velocity) {
         Quad2 q1 = new Quad2(quad.points[0].flattenX(), quad.points[1].flattenX(), quad.points[1].add(velocity).flattenX(), quad.points[0].add(velocity).flattenX());
         Quad2 q2 = new Quad2(quad.points[1].flattenZ(), quad.points[2].flattenZ(), quad.points[2].add(velocity).flattenZ(), quad.points[1].add(velocity).flattenZ());
@@ -127,6 +135,14 @@ public class AABB {
         return false;
     }
 
+    public static boolean intersectY(Quad3 quad, Line3 line) {
+        Line2 q1 = new Line2(quad.points[0].flattenX(), quad.points[1].flattenX());
+        Line2 q2 = new Line2(quad.points[1].flattenZ(), quad.points[2].flattenZ());
+        Line2 l1 = line.flattenX();
+        Line2 l2 = line.flattenZ();
+        return Util.lineIntersect(q1.points[0], q1.points[1], l1.points[0], l1.points[1]) && Util.lineIntersect(q2.points[0], q2.points[1], l2.points[0], l2.points[1]);
+    }
+
     public static boolean intersectZ(Quad3 quad, Quad3 qSta, Vector3 velocity) {
         Quad2 q1 = new Quad2(quad.points[0].flattenX(), quad.points[1].flattenX(), quad.points[1].add(velocity).flattenX(), quad.points[0].add(velocity).flattenX());
         Quad2 q2 = new Quad2(quad.points[1].flattenY(), quad.points[2].flattenY(), quad.points[2].add(velocity).flattenY(), quad.points[1].add(velocity).flattenY());
@@ -136,6 +152,14 @@ public class AABB {
             return true;
         }
         return false;
+    }
+
+    public static boolean intersectZ(Quad3 quad, Line3 line) {
+        Line2 q1 = new Line2(quad.points[0].flattenX(), quad.points[1].flattenX());
+        Line2 q2 = new Line2(quad.points[1].flattenY(), quad.points[2].flattenY());
+        Line2 l1 = line.flattenX();
+        Line2 l2 = line.flattenY();
+        return Util.lineIntersect(q1.points[0], q1.points[1], l1.points[0], l1.points[1]) && Util.lineIntersect(q2.points[0], q2.points[1], l2.points[0], l2.points[1]);
     }
 
 }
