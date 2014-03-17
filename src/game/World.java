@@ -5,12 +5,11 @@ import util.AABB;
 import java.util.ArrayList;
 
 public class World {
-
     public ArrayList<Chunk> loadedChunks = new ArrayList<Chunk>();
     RenderWorld render;
 
-    public World() {
-        render = new RenderWorld(this);
+    public World(TextureLoader tl) {
+        render = new RenderWorld(this, tl);
     }
 
     public byte getBlock(int x, int y, int z) {
@@ -28,7 +27,6 @@ public class World {
     }
 
     public Block getBlockWithoutGenerating(int x, int y, int z) {
-        long currentTime = System.currentTimeMillis();
         if (y < 0 || y > 255) {
             return null;
         }
@@ -38,7 +36,6 @@ public class World {
         if (c == null) {
             return null;
         }
-        long delta = currentTime - System.currentTimeMillis();
         return c.getBlock(x & 0xF, y, z & 0xF);
     }
 
@@ -64,12 +61,12 @@ public class World {
     }
 
     public Chunk findChunk(int x, int z) {
-        for (Chunk c : loadedChunks) {
+        for (int i = 0; i < loadedChunks.size(); i++) {
+            Chunk c = loadedChunks.get(i);
             if (c.x == x && c.z == z) {
                 return c;
             }
         }
         return null;
     }
-
 }

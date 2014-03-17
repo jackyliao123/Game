@@ -5,6 +5,7 @@ import util.AABB;
 public class Block {
 
     public final byte id;
+    public int[] textureId = new int[6];
     public static Block[] blocksList = new Block[127];
     private final boolean isOpaque;
 
@@ -22,7 +23,12 @@ public class Block {
         return isOpaque;
     }
 
-    public static final Block DIRT = new Block(1, true);
-    public static final Block GLASS = new Block(2, false);
+    public Block setTexture(int[] texture) {
+        textureId = texture;
+        return this;
+    }
+
+    public static final Block DIRT = new Block(1, true).setTexture(new int[]{2, 2, 2, 2, 2, 2});
+    public static final Block GRASS = new Block(2, true).setTexture(new int[]{0, 1, 1, 1, 1, 2});
 
 }

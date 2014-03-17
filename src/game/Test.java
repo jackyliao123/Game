@@ -57,7 +57,8 @@ public class Test {
     public static double reach = 5;
     public static CollisionSide sideSelected;
     public static XYZ blockSelected;
-    public static World world = new World();
+    public static World world;
+    public static TextureLoader loader = new TextureLoader();
     public static ArrayList<Particle> particles = new ArrayList<Particle>();
 
     public static void main(String[] args) {
@@ -76,6 +77,8 @@ public class Test {
             glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
             glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST);
             glEnable(GL_LINE_SMOOTH);
+            loader = new TextureLoader(Test.class.getResourceAsStream("/textures/tiles.png"), 32, 32, 8, 8);
+            world = new World(loader);
             //glShadeModel(GL_FLAT);
             //glEnable(GL_MULTISAMPLE);
             Mouse.setGrabbed(true);
@@ -103,9 +106,7 @@ public class Test {
             //aabbs.add(new AABB(10, 10, 10, 0, 0, 0, 2, 2, 2));
             try {
                 texture = loadTexture(Test.class.getResourceAsStream("/textures/a.png"));
-                texture1 = loadTexture(Test.class.getResourceAsStream("/textures/texture2.png"));
             } catch (IOException e) {
-                // TODO Auto-generated catch block
                 e.printStackTrace();
             }
 
@@ -194,10 +195,8 @@ public class Test {
                 glEnd();
                 glEnable(GL_LIGHTING);
                 glEnable(GL_LIGHT0);
-                glBindTexture(GL_TEXTURE_2D, texture1);
-                glEnable(GL_TEXTURE_2D);
                 //vbo.render();
-                loadUnloadChunks(0);
+                loadUnloadChunks(1);
                 world.render.render();
                 glPointSize(10);
                 if (blockSelected != null) {
@@ -214,6 +213,8 @@ public class Test {
                 Display.sync(60);
             }
         } catch (LWJGLException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
             e.printStackTrace();
         }
     }
@@ -716,8 +717,6 @@ public class Test {
         }
     }
 
-
-    static int texture1;
     static int texture;
 
     public static ArrayList<AABB> getAllAABBs(AABB area) {
