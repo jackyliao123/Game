@@ -9,6 +9,7 @@ import org.lwjgl.opengl.DisplayMode;
 import org.lwjgl.opengl.GL12;
 import org.lwjgl.opengl.PixelFormat;
 import org.lwjgl.util.glu.GLU;
+import util.*;
 
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
@@ -18,7 +19,6 @@ import java.nio.ByteBuffer;
 import java.nio.FloatBuffer;
 import java.util.ArrayList;
 import java.util.PriorityQueue;
-import java.util.Random;
 
 import static org.lwjgl.opengl.GL11.*;
 
@@ -35,14 +35,13 @@ public class Test {
     public static double rotx;
     public static double roty;
     public static double posX;
-    public static double posY;
+    public static double posY = 65;
     public static double posZ;
     public static double motionX;
     public static double motionY;
     public static double motionZ;
     public static boolean canJump;
     public static AABB boundingBox = new AABB(0, 0, 0, -0.4, 0, -0.4, 0.4, 1.8, 0.4);
-    public static ArrayList<AABB> aabbs = new ArrayList<AABB>();
     public static double speed = 0.005;
     public static boolean fly = true;
     public static double thirdPerson;
@@ -54,17 +53,18 @@ public class Test {
     public static boolean hasFocus = true;
     public static final double block = 1e-8;
     public static VBO vbo = new VBO();
+    public static double yOffset = 1.5;
+    public static double reach = 5;
+    public static CollisionSide sideSelected;
+    public static XYZ blockSelected;
+    public static World world = new World();
+    public static ArrayList<Particle> particles = new ArrayList<Particle>();
 
-    static int blockTexture;
-
-    //TIME FOR BLOCK BREAKING!!!!
     public static void main(String[] args) {
         try {
             Display.setDisplayMode(new DisplayMode(800, 600));
-            Display.create(new PixelFormat(8, 8, 0, 8));
-            Display.setResizable(true);
-            //10, 100, 180
-            glClearColor(0.04f, 0.4f, 0.9f, 1);
+            Display.setInitialBackground(0, 0.5f, 1);
+            Display.create(new PixelFormat(8, 8, 0, 0));
             glEnable(GL_DEPTH_TEST);
             glEnable(GL_CULL_FACE);
             glCullFace(GL_BACK);
@@ -79,22 +79,22 @@ public class Test {
             //glShadeModel(GL_FLAT);
             //glEnable(GL_MULTISAMPLE);
             Mouse.setGrabbed(true);
-            Random random = new Random(0);
-            for (int i = 0; i < 32; i++) {
-                for (int j = 0; j < 32; j++) {
-                    for (int k = 0; k < 32; k++) {
-                        if (random.nextInt() % 5 == 0) {
-                            aabbs.add(new AABB(i, j, k, 0, 0, 0, 1, 1, 1));
-                        }
-                    }
-                    //aabbs.add(new AABB(i, 0, j, 0, 0, 0, 1, 1, 1));
-                }
-            }
+            /*Random random = new Random(0);
+            for(int i = 0; i < 32; i ++){
+				for(int j = 0; j < 32; j ++){
+					for(int k = 0; k < 32; k ++){
+						//if(random.nextInt() % 5 == 0){
+							aabbs.add(new AABB(i, j, k, 0, 0, 0, 1, 1, 1));
+						}
+					//}
+					//aabbs.add(new AABB(i, 0, j, 0, 0, 0, 1, 1, 1));
+				}
+			}*/
 
             vbo.glBegin(GL_QUADS);
-            for (AABB aabb : aabbs) {
-                initAABB(aabb, 1);
-            }
+            /*for(AABB aabb : aabbs){
+                initAABB(aabb, 1, vbo);
+			}*/
             vbo.glEnd();
             System.gc();
 
@@ -102,11 +102,20 @@ public class Test {
 
             //aabbs.add(new AABB(10, 10, 10, 0, 0, 0, 2, 2, 2));
             try {
-                texture1 = loadTexture(Test.class.getResourceAsStream("/textures/a.png"));
-                blockTexture = loadTexture(Test.class.getResourceAsStream("/textures/texture2.png"));
+                texture = loadTexture(Test.class.getResourceAsStream("/textures/a.png"));
+                texture1 = loadTexture(Test.class.getResourceAsStream("/textures/texture2.png"));
             } catch (IOException e) {
+                // TODO Auto-generated catch block
                 e.printStackTrace();
             }
+
+            FloatBuffer fogColor = (FloatBuffer) BufferUtils.createFloatBuffer(4).put(0).put(0.5f).put(1).put(1).flip();
+            glFogi(GL_FOG_MODE, GL_EXP);
+            glFog(GL_FOG_COLOR, fogColor);
+            glFogf(GL_FOG_DENSITY, 0.02f);
+            glHint(GL_FOG_HINT, GL_NICEST);
+            glEnable(GL_FOG);
+
             while (!Display.isCloseRequested()) {
                 glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
                 glLoadIdentity();
@@ -124,37 +133,83 @@ public class Test {
                 glMatrixMode(GL_PROJECTION);
                 glLoadIdentity();
                 fov += (targetFov - fov) * 0.2;
-                GLU.gluPerspective(fov, (float) Display.getWidth() / (float) Display.getHeight(), 0.01F, 100.0F);
+                GLU.gluPerspective(fov, (float) Display.getWidth() / (float) Display.getHeight(), 0.01F, 1000.0F);
                 glMatrixMode(GL_MODELVIEW);
+
+                //particles.add(new Particle(posX, posY, posZ));
+
                 glLight(GL_LIGHT0, GL_POSITION, (FloatBuffer) BufferUtils.createFloatBuffer(4).put(0f).put(0f).put(0f).put(1f).flip());
                 glLight(GL_LIGHT0, GL_SPECULAR, (FloatBuffer) BufferUtils.createFloatBuffer(4).put(0f).put(0f).put(0f).put(1f).flip());
                 if (hasFocus && Keyboard.isKeyDown(Keyboard.KEY_ESCAPE)) {
                     hasFocus = false;
                     Mouse.setGrabbed(false);
                 }
+                if (hasFocus && Mouse.isButtonDown(0) && blockSelected != null && breakTimer <= 0) {
+                    world.setBlock(blockSelected.x, blockSelected.y, blockSelected.z, 0);
+                    breakTimer = 10;
+                }
+                if (hasFocus && Mouse.isButtonDown(1) && sideSelected != null && placeTimer <= 0) {
+                    switch (sideSelected.type) {
+                        case CollisionSide.Xn:
+                            world.setBlock(blockSelected.x + 1, blockSelected.y,
+                                    blockSelected.z, Block.DIRT.id);
+                            break;
+                        case CollisionSide.Xp:
+                            world.setBlock(blockSelected.x - 1, blockSelected.y,
+                                    blockSelected.z, Block.DIRT.id);
+                            break;
+                        case CollisionSide.Yn:
+                            world.setBlock(blockSelected.x, blockSelected.y + 1,
+                                    blockSelected.z, Block.DIRT.id);
+                            break;
+                        case CollisionSide.Yp:
+                            world.setBlock(blockSelected.x, blockSelected.y - 1,
+                                    blockSelected.z, Block.DIRT.id);
+                            break;
+                        case CollisionSide.Zn:
+                            world.setBlock(blockSelected.x, blockSelected.y,
+                                    blockSelected.z + 1, Block.DIRT.id);
+                            break;
+                        case CollisionSide.Zp:
+                            world.setBlock(blockSelected.x, blockSelected.y,
+                                    blockSelected.z - 1, Block.DIRT.id);
+                            break;
+                    }
+                    placeTimer = 10;
+                }
+                placeTimer--;
+                breakTimer--;
                 if (!hasFocus && Mouse.isButtonDown(0)) {
                     hasFocus = true;
                     Mouse.setCursorPosition(Display.getWidth() / 2, Display.getHeight() / 2);
                     Mouse.setGrabbed(true);
                 }
-                updateDisplay();
-
                 handleInput();
+                glDisable(GL_LIGHTING);
+                glBegin(GL_POINTS);
+                for (int i = 0; i < particles.size(); i++) {
+                    particles.get(i).tick();
+                    particles.get(i).render();
+                }
+                glEnd();
                 glEnable(GL_LIGHTING);
                 glEnable(GL_LIGHT0);
-
+                glBindTexture(GL_TEXTURE_2D, texture1);
                 glEnable(GL_TEXTURE_2D);
-                glBindTexture(GL_TEXTURE_2D, blockTexture);
-                vbo.render();
-                raytrace();
-
-                glDisable(GL_TEXTURE_2D);
-
+                //vbo.render();
+                loadUnloadChunks(0);
+                world.render.render();
+                glPointSize(10);
+                if (blockSelected != null) {
+                    AABB aabb = world.getAABB(blockSelected.x, blockSelected.y, blockSelected.z);
+                    if (aabb != null)
+                        drawBoundingBox(aabb, 1);
+                }
                 //glDisable(GL_CULL_FACE);
                 handleMovement();
-                drawAABB(boundingBox, 1);
+                BlockRender.drawAABB(boundingBox, 1, texture);
                 //drawCube(boundingBox.x - boundingBox.minX, boundingBox.y - boundingBox.minY, boundingBox.z - boundingBox.minZ, boundingBox.maxX - boundingBox.minX, boundingBox.maxY - boundingBox.minY, boundingBox.maxZ - boundingBox.minZ, 0.5);
-                glEnable(GL_CULL_FACE);
+//                glEnable(GL_CULL_FACE);
                 Display.update();
                 Display.sync(60);
             }
@@ -163,63 +218,106 @@ public class Test {
         }
     }
 
-    private static void updateDisplay() {
-        if (Display.wasResized()) {
-            glViewport(0, 0, Display.getWidth(), Display.getHeight());
-            GLU.gluPerspective(fov, (float) Display.getWidth() / (float) Display.getHeight(), 0.01f, 1000f);
-        }
-    }
-
-    public static void drawAABB(AABB aabb, double alpha) {
-        drawCube(aabb.getAbsMinX(), aabb.getAbsMinY(), aabb.getAbsMinZ(), aabb.getSizeX(), aabb.getSizeY(), aabb.getSizeZ(), alpha);
-    }
-
-    public static void initAABB(AABB aabb, double alpha) {
-        initCube(aabb.getAbsMinX(), aabb.getAbsMinY(), aabb.getAbsMinZ(), aabb.getSizeX(), aabb.getSizeY(), aabb.getSizeZ(), alpha);
-    }
-
-    public static void handleMovement() {
-        boundingBox.x = posX;
-        boundingBox.y = posY;
-        boundingBox.z = posZ;
-        canJump = false;
-        //long l = System.nanoTime();
-        collide();
-        //double t = (System.nanoTime() - l) / 1000000d;
-        //System.out.println(t);
-        posX += motionX;
-        posY += motionY;
-        posZ += motionZ;
-        if (posY < 0) {
-            posY = 0;
-            motionY = 0;
-            canJump = true;
-            if (fly) {
-                fly = false;
-                targetFov /= 1.2;
+    public static void loadUnloadChunks(int size) {
+        int inChunkX = (int) Math.floor(posX / 16);
+        int inChunkZ = (int) Math.floor(posZ / 16);
+        PriorityQueue<ChunkPosition> queue = new PriorityQueue<ChunkPosition>();
+        for (int i = inChunkX - size; i <= inChunkX + size; i++) {
+            for (int j = inChunkZ - size; j <= inChunkZ + size; j++) {
+                if (world.findChunk(i, j) == null && world.render.findRedrawList(i, j) == null) {
+                    ChunkPosition c = new ChunkPosition(i, j);
+                    c.distance = (inChunkX - i) * (inChunkX - i) + (inChunkZ - j) * (inChunkZ - j);
+                    queue.add(c);
+                    //world.loadedChunks.add(c);
+                }
             }
-            motionX *= 0.95;
-            motionZ *= 0.95;
         }
-        if (!fly) {
-            motionY -= 0.01;
+        int s = queue.size();
+        for (int i = 0; i < s; i++) {
+            ChunkPosition p = queue.poll();
+            world.loadedChunks.add(new Chunk(world, p.x, p.z));
         }
+        for (int i = 0; i < world.loadedChunks.size(); i++) {
+            Chunk c = world.loadedChunks.get(i);
+            if (Math.abs(c.x - inChunkX) > size + 1 || Math.abs(c.z - inChunkZ) > size + 1) {
+                world.loadedChunks.remove(c);
+            }
+        }
+        for (int i = 0; i < world.render.position.size(); i++) {
+            ChunkPosition c = world.render.position.get(i);
+            if (Math.abs(c.x - inChunkX) > size + 1 || Math.abs(c.z - inChunkZ) > size + 1) {
+                world.render.position.remove(c);
+            }
+        }
+    }
 
-        motionX *= 0.95;
-        motionY *= 0.95;
-        motionZ *= 0.95;
+    private static void drawBoundingBox(AABB aabb, double alpha) {
+        double offset = 0.01;
+        glLineWidth(2);
+        drawBoundingBox(aabb.getAbsMinX() - offset, aabb.getAbsMinY() - offset, aabb.getAbsMinZ() - offset, aabb.getSizeX() + offset, aabb.getSizeY() + offset, aabb.getSizeZ() + offset, alpha);
+    }
+
+    private static void drawBoundingBox(double x, double y, double z, double xSize, double ySize, double zSize, double alpha) {
+        glColor4d(0, 0, 0, alpha);
+        glDisable(GL_TEXTURE_2D);
+        glDisable(GL_LIGHTING);
+        glBegin(GL_LINES);
+        //back
+        glVertex3d(x, y, z);
+        glVertex3d(x, y + ySize, z);
+        glVertex3d(x + xSize, y + ySize, z);
+        glVertex3d(x + xSize, y, z);
+        //front
+        glVertex3d(x, y + ySize, z + zSize);
+        glVertex3d(x, y, z + zSize);
+        glVertex3d(x + xSize, y, z + zSize);
+        glVertex3d(x + xSize, y + ySize, z + zSize);
+        //down
+        glVertex3d(x + xSize, y, z);
+        glVertex3d(x + xSize, y, z + zSize);
+        glVertex3d(x + xSize, y, z + zSize);
+        glVertex3d(x, y, z + zSize);
+        glVertex3d(x, y, z + zSize);
+        glVertex3d(x, y, z);
+        glVertex3d(x + xSize, y, z);
+        glVertex3d(x, y, z);
+        //up
+        glVertex3d(x, y + ySize, z);
+        glVertex3d(x, y + ySize, z + zSize);
+        glVertex3d(x, y + ySize, z + zSize);
+        glVertex3d(x + xSize, y + ySize, z + zSize);
+        glVertex3d(x + xSize, y + ySize, z + zSize);
+        glVertex3d(x + xSize, y + ySize, z);
+        glVertex3d(x, y + ySize, z);
+        glVertex3d(x + xSize, y + ySize, z);
+        //left
+        glVertex3d(x, y + ySize, z + zSize);
+        glVertex3d(x, y + ySize, z);
+        glVertex3d(x, y, z);
+        glVertex3d(x, y, z + zSize);
+        //right
+        glVertex3d(x + xSize, y, z);
+        glVertex3d(x + xSize, y + ySize, z);
+        glVertex3d(x + xSize, y + ySize, z + zSize);
+        glVertex3d(x + xSize, y, z + zSize);
+        glEnd();
     }
 
     private static void raytrace() {
-        double x = -Math.cos(Math.toRadians(rotx + 90)) * 5 * Math.cos(Math.toRadians(roty)) + posX;
-        double y = -Math.cos(Math.toRadians(roty - 90)) * 5 + posY + 1.5;
-        double z = -Math.sin(Math.toRadians(rotx + 90)) * 5 * Math.cos(Math.toRadians(roty)) + posZ;
+        blockSelected = null;
+        sideSelected = null;
+        double x = -Math.cos(Math.toRadians(rotx + 90)) * reach * Math.cos(Math.toRadians(roty)) + posX;
+        double y = -Math.cos(Math.toRadians(roty - 90)) * reach + posY + yOffset;
+        double z = -Math.sin(Math.toRadians(rotx + 90)) * reach * Math.cos(Math.toRadians(roty)) + posZ;
 
-        Line3 ray = new Line3(new Point3(posX, posY + 1.5, posZ), new Point3(x, y, z));
+        Point3 center = new Point3(posX, posY + yOffset, posZ);
 
-        AABB checkArea = new AABB(boundingBox.x, boundingBox.y, boundingBox.z, -5, -5, -5, 5, 5, 5);
-        Point3 center = boundingBox.getCenterPoint();
+        Line3 ray = new Line3(center, new Point3(x, y, z));
+
+        //AABB checkArea = new AABB(boundingBox.x, boundingBox.y, boundingBox.z, -reach, -reach, -reach, reach, reach, reach);
+        AABB checkArea = ray.toAABB();
         PriorityQueue<CollisionSide> sides = new PriorityQueue<CollisionSide>();
+        ArrayList<AABB> aabbs = getAllAABBs(checkArea);
         for (AABB aabb : aabbs) {
             if (!checkArea.intersects(aabb))
                 continue;
@@ -266,103 +364,92 @@ public class Test {
                             new Point3(aabb.getAbsMaxX(), aabb.getAbsMinY(), aabb.getAbsMaxZ())),
                     aabb, center, CollisionSide.Zn));
         }
-        boolean xCollide = false;
-        boolean yCollide = false;
-        boolean zCollide = false;
+        boolean collide = false;
+        int size = sides.size();
         //System.out.println("start");
-        for (int i = 0; i < sides.size(); i++) {
+        for (int i = 0; i < size; i++) {
             CollisionSide side = sides.poll();
             //if(side.aabb.getCenterPoint().distanceSqTo(side.qStat.getCenterPoint()) != 0.25){
             //System.out.println(side.aabb.getCenterPoint().distanceSqTo(side.qStat.getCenterPoint()));
             //}
             //System.out.println(side.aabb.getCenterPoint());
-            if (side.type == CollisionSide.Xp && !xCollide) {
+            if (side.type == CollisionSide.Xp && !collide) {
                 if (AABB.intersectX(side.qStat, ray)) {
-                    xCollide = true;
-                    drawBoundingBox(side.aabb, 1);
+                    collide = true;
+                    blockSelected = side.aabb.getXYZ();
+                    sideSelected = side;
                     return;
                 }
-            } else if (side.type == CollisionSide.Xn && !xCollide) {
+            } else if (side.type == CollisionSide.Xn && !collide) {
                 if (AABB.intersectX(side.qStat, ray)) {
-                    xCollide = true;
-                    drawBoundingBox(side.aabb, 1);
+                    collide = true;
+                    blockSelected = side.aabb.getXYZ();
+                    sideSelected = side;
                     return;
                 }
-            } else if (side.type == CollisionSide.Yp && !yCollide) {
+            } else if (side.type == CollisionSide.Yp && !collide) {
                 if (AABB.intersectY(side.qStat, ray)) {
-                    yCollide = true;
-                    drawBoundingBox(side.aabb, 1);
+                    collide = true;
+                    blockSelected = side.aabb.getXYZ();
+                    sideSelected = side;
                     return;
                 }
-            } else if (side.type == CollisionSide.Yn && !yCollide) {
+            } else if (side.type == CollisionSide.Yn && !collide) {
                 if (AABB.intersectY(side.qStat, ray)) {
-                    yCollide = true;
-                    drawBoundingBox(side.aabb, 1);
+                    collide = true;
+                    blockSelected = side.aabb.getXYZ();
+                    sideSelected = side;
                     return;
                 }
-            } else if (side.type == CollisionSide.Zp && !zCollide) {
+            } else if (side.type == CollisionSide.Zp && !collide) {
                 if (AABB.intersectZ(side.qStat, ray)) {
-                    zCollide = true;
-                    drawBoundingBox(side.aabb, 1);
+                    collide = true;
+                    blockSelected = side.aabb.getXYZ();
+                    sideSelected = side;
                     return;
                 }
-            } else if (side.type == CollisionSide.Zn && !zCollide) {
+            } else if (side.type == CollisionSide.Zn && !collide) {
                 if (AABB.intersectZ(side.qStat, ray)) {
-                    zCollide = true;
-                    drawBoundingBox(side.aabb, 1);
+                    collide = true;
+                    blockSelected = side.aabb.getXYZ();
+                    sideSelected = side;
                     return;
                 }
             }
         }
     }
 
-    private static void drawBoundingBox(AABB aabb, double alpha) {
-        drawBoundingBox(aabb.getAbsMinX() - 0.005, aabb.getAbsMinY() - 0.005, aabb.getAbsMinZ() - 0.005, aabb.getSizeX() + 0.005,
-                aabb.getSizeY() + 0.005, aabb.getSizeZ() + 0.005, alpha);
-    }
+    public static void handleMovement() {
+        boundingBox.x = posX;
+        boundingBox.y = posY;
+        boundingBox.z = posZ;
+        canJump = false;
+        //long l = System.nanoTime();
+        raytrace();
+        collide();
+        //double t = (System.nanoTime() - l) / 1000000d;
+        //System.out.println(t);
+        posX += motionX;
+        posY += motionY;
+        posZ += motionZ;
+        if (posY < 0) {
+            posY = 0;
+            motionY = 0;
+            canJump = true;
+            if (fly) {
+                fly = false;
+                targetFov /= 1.2;
+            }
+            motionX *= 0.95;
+            motionZ *= 0.95;
+        }
+        if (!fly) {
+            motionY -= 0.01;
+        }
 
-    private static void drawBoundingBox(double x, double y, double z, double xSize, double ySize, double zSize, double alpha) {
-        glColor4d(0, 0, 0, alpha);
-        glBegin(GL_LINES);
-        //back
-        glVertex3d(x, y, z);
-        glVertex3d(x, y + ySize, z);
-        glVertex3d(x + xSize, y + ySize, z);
-        glVertex3d(x + xSize, y, z);
-        //front
-        glVertex3d(x, y + ySize, z + zSize);
-        glVertex3d(x, y, z + zSize);
-        glVertex3d(x + xSize, y, z + zSize);
-        glVertex3d(x + xSize, y + ySize, z + zSize);
-        //down
-        glVertex3d(x + xSize, y, z);
-        glVertex3d(x + xSize, y, z + zSize);
-        glVertex3d(x + xSize, y, z + zSize);
-        glVertex3d(x, y, z + zSize);
-        glVertex3d(x, y, z + zSize);
-        glVertex3d(x, y, z);
-        glVertex3d(x + xSize, y, z);
-        glVertex3d(x, y, z);
-        //up
-        glVertex3d(x, y + ySize, z);
-        glVertex3d(x, y + ySize, z + zSize);
-        glVertex3d(x, y + ySize, z + zSize);
-        glVertex3d(x + xSize, y + ySize, z + zSize);
-        glVertex3d(x + xSize, y + ySize, z + zSize);
-        glVertex3d(x + xSize, y + ySize, z);
-        glVertex3d(x, y + ySize, z);
-        glVertex3d(x + xSize, y + ySize, z);
-        //left
-        glVertex3d(x, y + ySize, z + zSize);
-        glVertex3d(x, y + ySize, z);
-        glVertex3d(x, y, z);
-        glVertex3d(x, y, z + zSize);
-        //right
-        glVertex3d(x + xSize, y, z);
-        glVertex3d(x + xSize, y + ySize, z);
-        glVertex3d(x + xSize, y + ySize, z + zSize);
-        glVertex3d(x + xSize, y, z + zSize);
-        glEnd();
+        motionX *= 0.95;
+        motionY *= 0.95;
+        motionZ *= 0.95;
     }
 
     public static void collide() {
@@ -377,6 +464,7 @@ public class Test {
         PriorityQueue<CollisionSide> sides = new PriorityQueue<CollisionSide>();
         //drawAABB(playerMovement, 0.25);
         Point3 center = boundingBox.getCenterPoint();
+        ArrayList<AABB> aabbs = getAllAABBs(playerMovement);
         for (AABB aabb : aabbs) {
             if (!playerMovement.intersects(aabb))
                 continue;
@@ -536,6 +624,9 @@ public class Test {
         }
     }
 
+    public static int breakTimer;
+    public static int placeTimer;
+
     public static void handleInput() {
         if (hasFocus) {
             rotx += (Mouse.getX() - Display.getWidth() / 2.0) / 5.0;
@@ -558,7 +649,7 @@ public class Test {
         double yoffset = -Math.cos(Math.toRadians(roty - 90)) * thirdPerson;
         double zoffset = -Math.sin(Math.toRadians(rotx + 90)) * thirdPerson * Math.cos(Math.toRadians(roty));
         glTranslated(xoffset, yoffset, zoffset);
-        glTranslated(-posX, -posY - 1.5, -posZ);
+        glTranslated(-posX, -posY - yOffset, -posZ);
         if (hasFocus) {
             spaceTimer++;
             sprintTimer++;
@@ -625,232 +716,36 @@ public class Test {
         }
     }
 
-    public static void initCube(double x, double y, double z, double xSize, double ySize, double zSize, double alpha) {
-        vbo.glColor4d(1, 1, 1, alpha);
-        //back
-//        vbo.glColor4d(1, 0, 0, alpha);
-        vbo.glNormal3d(0, 0, -1);
-        vbo.glTexCoord2d(1, 1);
-        vbo.glVertex3d(x, y, z);
-        vbo.glTexCoord2d(1, 0);
-        vbo.glVertex3d(x, y + ySize, z);
-        vbo.glTexCoord2d(0, 0);
-        vbo.glVertex3d(x + xSize, y + ySize, z);
-        vbo.glTexCoord2d(0, 1);
-        vbo.glVertex3d(x + xSize, y, z);
-        //front
-//        vbo.glColor4d(0, 1, 0, alpha);
-        vbo.glNormal3d(0, 0, 1);
-        vbo.glTexCoord2d(0, 0);
-        vbo.glVertex3d(x, y + ySize, z + zSize);
-        vbo.glTexCoord2d(0, 1);
-        vbo.glVertex3d(x, y, z + zSize);
-        vbo.glTexCoord2d(1, 1);
-        vbo.glVertex3d(x + xSize, y, z + zSize);
-        vbo.glTexCoord2d(1, 0);
-        vbo.glVertex3d(x + xSize, y + ySize, z + zSize);
-        //down
-//        vbo.glColor4d(1, 1, 0, alpha);
-        vbo.glNormal3d(0, -1, 0);
-        vbo.glTexCoord2d(0, 0);
-        vbo.glVertex3d(x + xSize, y, z);
-        vbo.glTexCoord2d(0, 1);
-        vbo.glVertex3d(x + xSize, y, z + zSize);
-        vbo.glTexCoord2d(1, 1);
-        vbo.glVertex3d(x, y, z + zSize);
-        vbo.glTexCoord2d(1, 0);
-        vbo.glVertex3d(x, y, z);
-        //up
-//        vbo.glColor4d(0, 0, 1, alpha);
-        vbo.glNormal3d(0, 1, 0);
-        vbo.glTexCoord2d(0, 0);
-        vbo.glVertex3d(x, y + ySize, z);
-        vbo.glTexCoord2d(0, 1);
-        vbo.glVertex3d(x, y + ySize, z + zSize);
-        vbo.glTexCoord2d(1, 1);
-        vbo.glVertex3d(x + xSize, y + ySize, z + zSize);
-        vbo.glTexCoord2d(1, 0);
-        vbo.glVertex3d(x + xSize, y + ySize, z);
-        //left
-//        vbo.glColor4d(1, 0, 1, alpha);
-        vbo.glNormal3d(-1, 0, 0);
-        vbo.glTexCoord2d(1, 0);
-        vbo.glVertex3d(x, y + ySize, z + zSize);
-        vbo.glTexCoord2d(0, 0);
-        vbo.glVertex3d(x, y + ySize, z);
-        vbo.glTexCoord2d(0, 1);
-        vbo.glVertex3d(x, y, z);
-        vbo.glTexCoord2d(1, 1);
-        vbo.glVertex3d(x, y, z + zSize);
-        //right
-        vbo.glColor4d(1, 1, 1, alpha);
-        vbo.glNormal3d(1, 0, 0);
-        vbo.glTexCoord2d(1, 1);
-        vbo.glVertex3d(x + xSize, y, z);
-        vbo.glTexCoord2d(1, 0);
-        vbo.glVertex3d(x + xSize, y + ySize, z);
-        vbo.glTexCoord2d(0, 0);
-        vbo.glVertex3d(x + xSize, y + ySize, z + zSize);
-        vbo.glTexCoord2d(0, 1);
-        vbo.glVertex3d(x + xSize, y, z + zSize);
-
-        vbo.glColor3d(0, 0, 0);
-        /*vbo.glBegin(GL_LINES);
-        //back
-		vbo.glVertex3d(x, y, z);
-		vbo.glVertex3d(x, y + ySize, z);
-		vbo.glVertex3d(x + xSize, y + ySize, z);
-		vbo.glVertex3d(x + xSize, y, z);
-		//front
-		vbo.glVertex3d(x, y + ySize, z + zSize);
-		vbo.glVertex3d(x, y, z + zSize);
-		vbo.glVertex3d(x + xSize, y, z + zSize);
-		vbo.glVertex3d(x + xSize, y + ySize, z + zSize);
-		//down
-		vbo.glVertex3d(x + xSize, y, z);
-		vbo.glVertex3d(x + xSize, y, z + zSize);
-		vbo.glVertex3d(x + xSize, y, z + zSize);
-		vbo.glVertex3d(x, y, z + zSize);
-		vbo.glVertex3d(x, y, z + zSize);
-		vbo.glVertex3d(x, y, z);
-		vbo.glVertex3d(x + xSize, y, z);
-		vbo.glVertex3d(x, y, z);
-		//up
-		vbo.glVertex3d(x, y + ySize, z);
-		vbo.glVertex3d(x, y + ySize, z + zSize);
-		vbo.glVertex3d(x, y + ySize, z + zSize);
-		vbo.glVertex3d(x + xSize, y + ySize, z + zSize);
-		vbo.glVertex3d(x + xSize, y + ySize, z + zSize);
-		vbo.glVertex3d(x + xSize, y + ySize, z);
-		vbo.glVertex3d(x, y + ySize, z);
-		vbo.glVertex3d(x + xSize, y + ySize, z);
-		//left
-		vbo.glVertex3d(x, y + ySize, z + zSize);
-		vbo.glVertex3d(x, y + ySize, z);
-		vbo.glVertex3d(x, y, z);
-		vbo.glVertex3d(x, y, z + zSize);
-		//right
-		vbo.glVertex3d(x + xSize, y, z);
-		vbo.glVertex3d(x + xSize, y + ySize, z);
-		vbo.glVertex3d(x + xSize, y + ySize, z + zSize);
-		vbo.glVertex3d(x + xSize, y, z + zSize);
-		vbo.glEnd();*/
-    }
 
     static int texture1;
+    static int texture;
 
-    public static void drawCube(double x, double y, double z, double xSize, double ySize, double zSize, double alpha) {
-        glEnable(GL_TEXTURE_2D);
-        glBindTexture(GL_TEXTURE_2D, texture1);
-        glEnable(GL_LIGHTING);
-        glEnable(GL_LIGHT0);
-        glBegin(GL_QUADS);
-        //back
-        glColor4d(1, 1, 1, alpha);
-        glNormal3d(0, 0, -1);
-        glTexCoord2d(0, 1);
-        glVertex3d(x, y, z);
-        glTexCoord2d(0, 0);
-        glVertex3d(x, y + ySize, z);
-        glTexCoord2d(1, 0);
-        glVertex3d(x + xSize, y + ySize, z);
-        glTexCoord2d(1, 1);
-        glVertex3d(x + xSize, y, z);
-        //front
-        glNormal3d(0, 0, 1);
-        glTexCoord2d(0, 0);
-        glVertex3d(x, y + ySize, z + zSize);
-        glTexCoord2d(0, 1);
-        glVertex3d(x, y, z + zSize);
-        glTexCoord2d(1, 1);
-        glVertex3d(x + xSize, y, z + zSize);
-        glTexCoord2d(1, 0);
-        glVertex3d(x + xSize, y + ySize, z + zSize);
-        //down
-        glNormal3d(0, -1, 0);
-        glVertex3d(x + xSize, y, z);
-        glVertex3d(x + xSize, y, z + zSize);
-        glVertex3d(x, y, z + zSize);
-        glVertex3d(x, y, z);
-        //up
-        glNormal3d(0, 1, 0);
-        glVertex3d(x, y + ySize, z);
-        glVertex3d(x, y + ySize, z + zSize);
-        glVertex3d(x + xSize, y + ySize, z + zSize);
-        glVertex3d(x + xSize, y + ySize, z);
-        //left
-        glNormal3d(-1, 0, 0);
-        glTexCoord2d(0, 0);
-        glVertex3d(x, y + ySize, z + zSize);
-        glTexCoord2d(1, 0);
-        glVertex3d(x, y + ySize, z);
-        glTexCoord2d(1, 1);
-        glVertex3d(x, y, z);
-        glTexCoord2d(0, 1);
-        glVertex3d(x, y, z + zSize);
-        //right
-        glNormal3d(1, 0, 0);
-        glTexCoord2d(1, 1);
-        glVertex3d(x + xSize, y, z);
-        glTexCoord2d(1, 0);
-        glVertex3d(x + xSize, y + ySize, z);
-        glTexCoord2d(0, 0);
-        glVertex3d(x + xSize, y + ySize, z + zSize);
-        glTexCoord2d(0, 1);
-        glVertex3d(x + xSize, y, z + zSize);
-        glEnd();
-
-        glColor3d(0, 0, 0);
-        glDisable(GL_LIGHTING);
-        glDisable(GL_LIGHT0);
-        glDisable(GL_TEXTURE_2D);
-//		glBegin(GL_LINES);
-//		//back
-//		glVertex3d(x, y, z);
-//		glVertex3d(x, y + ySize, z);
-//		glVertex3d(x + xSize, y + ySize, z);
-//		glVertex3d(x + xSize, y, z);
-//		//front
-//		glVertex3d(x, y + ySize, z + zSize);
-//		glVertex3d(x, y, z + zSize);
-//		glVertex3d(x + xSize, y, z + zSize);
-//		glVertex3d(x + xSize, y + ySize, z + zSize);
-//		//down
-//		glVertex3d(x + xSize, y, z);
-//		glVertex3d(x + xSize, y, z + zSize);
-//		glVertex3d(x + xSize, y, z + zSize);
-//		glVertex3d(x, y, z + zSize);
-//		glVertex3d(x, y, z + zSize);
-//		glVertex3d(x, y, z);
-//		glVertex3d(x + xSize, y, z);
-//		glVertex3d(x, y, z);
-//		//up
-//		glVertex3d(x, y + ySize, z);
-//		glVertex3d(x, y + ySize, z + zSize);
-//		glVertex3d(x, y + ySize, z + zSize);
-//		glVertex3d(x + xSize, y + ySize, z + zSize);
-//		glVertex3d(x + xSize, y + ySize, z + zSize);
-//		glVertex3d(x + xSize, y + ySize, z);
-//		glVertex3d(x, y + ySize, z);
-//		glVertex3d(x + xSize, y + ySize, z);
-//		//left
-//		glVertex3d(x, y + ySize, z + zSize);
-//		glVertex3d(x, y + ySize, z);
-//		glVertex3d(x, y, z);
-//		glVertex3d(x, y, z + zSize);
-//		//right
-//		glVertex3d(x + xSize, y, z);
-//		glVertex3d(x + xSize, y + ySize, z);
-//		glVertex3d(x + xSize, y + ySize, z + zSize);
-//		glVertex3d(x + xSize, y, z + zSize);
-//		glEnd();
+    public static ArrayList<AABB> getAllAABBs(AABB area) {
+        ArrayList<AABB> aabbs = new ArrayList<AABB>();
+        int minX = (int) Math.floor(area.getAbsMinX()) - 1;
+        int minY = (int) Math.floor(area.getAbsMinY()) - 1;
+        int minZ = (int) Math.floor(area.getAbsMinZ()) - 1;
+        int maxX = (int) Math.floor(area.getAbsMaxX()) + 1;
+        int maxY = (int) Math.floor(area.getAbsMaxY()) + 1;
+        int maxZ = (int) Math.floor(area.getAbsMaxZ()) + 1;
+        for (int i = minX; i <= maxX; i++) {
+            for (int j = minY; j <= maxY; j++) {
+                for (int k = minZ; k <= maxZ; k++) {
+                    AABB aabb = world.getAABB(i, j, k);
+                    if (aabb != null) {
+                        aabbs.add(aabb);
+                    }
+                }
+            }
+        }
+        return aabbs;
     }
 
     public static int loadTexture(InputStream f) throws IOException {
         BufferedImage image = ImageIO.read(f);
         int[] pixels = new int[image.getWidth() * image.getHeight()];
         image.getRGB(0, 0, image.getWidth(), image.getHeight(), pixels, 0, image.getWidth());
-        ByteBuffer buffer = BufferUtils.createByteBuffer(image.getWidth() * image.getHeight() * 4);
+        ByteBuffer buffer = BufferUtils.createByteBuffer(image.getWidth() * image.getHeight() << 4);
         for (int i = 0; i < pixels.length; i++) {
             int rgba = pixels[i];
             buffer.put((byte) (rgba >> 16 & 0xFF)).put((byte) (rgba >> 8 & 0xFF)).put((byte) (rgba & 0xFF)).put((byte) (rgba >> 24 & 0xFF));
