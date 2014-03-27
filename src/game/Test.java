@@ -58,7 +58,7 @@ public class Test {
     public static CollisionSide sideSelected;
     public static XYZ blockSelected;
     public static World world;
-    public static TextureLoader loader = new TextureLoader();
+    public static TextureLoader tl = new TextureLoader();
     public static ArrayList<Particle> particles = new ArrayList<Particle>();
 
     public static void main(String[] args) {
@@ -77,8 +77,8 @@ public class Test {
             glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
             glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST);
             glEnable(GL_LINE_SMOOTH);
-            loader = new TextureLoader(Test.class.getResourceAsStream("/textures/tiles.png"), 32, 32, 8, 8);
-            world = new World(loader);
+            tl = new TextureLoader(Test.class.getResourceAsStream("/textures/tiles.png"), 32, 32, 8, 8);
+            world = new World(tl);
             //glShadeModel(GL_FLAT);
             //glEnable(GL_MULTISAMPLE);
             Mouse.setGrabbed(true);
@@ -147,7 +147,11 @@ public class Test {
                 }
                 if (hasFocus && Mouse.isButtonDown(0) && blockSelected != null && breakTimer <= 0) {
                     world.setBlock(blockSelected.x, blockSelected.y, blockSelected.z, 0);
-                    breakTimer = 10;
+                    for (int i = 0; i < 100; i++) {
+                        particles.add(new Particle(blockSelected.x + 0.5,
+                                blockSelected.y + 0.5, blockSelected.z + 0.5, tl, Block.DIRT));
+                        breakTimer = 10;
+                    }
                 }
                 if (hasFocus && Mouse.isButtonDown(1) && sideSelected != null && placeTimer <= 0) {
                     switch (sideSelected.type) {
@@ -187,18 +191,22 @@ public class Test {
                 }
                 handleInput();
                 glDisable(GL_LIGHTING);
-                glBegin(GL_POINTS);
+                glColor4d(1, 1, 1, 1);
+                glDisable(GL_CULL_FACE);
+                glEnable(GL_TEXTURE_2D);
+                glBindTexture(GL_TEXTURE_2D, tl.getTextureId());
+                glBegin(GL_QUADS);
                 for (int i = 0; i < particles.size(); i++) {
-                    particles.get(i).tick();
                     particles.get(i).render();
+                    particles.get(i).tick();
                 }
                 glEnd();
+                glEnable(GL_CULL_FACE);
                 glEnable(GL_LIGHTING);
                 glEnable(GL_LIGHT0);
                 //vbo.render();
-                loadUnloadChunks(1);
+                loadUnloadChunks(2);
                 world.render.render();
-                glPointSize(10);
                 if (blockSelected != null) {
                     AABB aabb = world.getAABB(blockSelected.x, blockSelected.y, blockSelected.z);
                     if (aabb != null)
@@ -682,6 +690,12 @@ public class Test {
             }
             if (Keyboard.isKeyDown(Keyboard.KEY_W)) {
                 if (sprint) {
+                    for (int i = 0; i < 10; i++) {
+                        particles.add(new Particle(posX,
+                                posY + 0.5, posZ, tl, Block.DIRT));
+                        breakTimer = 10;
+                    }
+
                     speed *= 1.5;
                 }
                 motionX += Math.cos(Math.toRadians(rotx - 90)) * speed;
